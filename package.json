@@ -18,5 +18,8 @@
   "bugs": {
     "url": "https://github.com/byu-oit-appdev/sans-server-swagger/issues"
   },
-  "homepage": "https://github.com/byu-oit-appdev/sans-server-swagger#readme"
+  "homepage": "https://github.com/byu-oit-appdev/sans-server-swagger#readme",
+  "dependencies": {
+    "swagger-parser": "^3.4.1"
+  }
 }
