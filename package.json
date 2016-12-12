@@ -1,0 +1,22 @@
+{
+  "name": "sans-server-swagger",
+  "version": "0.0.1",
+  "description": "Swagger tools for Sans-Server",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha test/*.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/byu-oit-appdev/sans-server-swagger.git"
+  },
+  "keywords": [
+    "sans-server"
+  ],
+  "author": "James Speirs <james.speirs@gmail.com>",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/byu-oit-appdev/sans-server-swagger/issues"
+  },
+  "homepage": "https://github.com/byu-oit-appdev/sans-server-swagger#readme"
+}
