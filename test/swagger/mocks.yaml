@@ -1,0 +1,380 @@
+swagger: '2.0'
+info:
+  version: 1.0.0
+  title: Swagger Petstore
+  license:
+    name: MIT
+host: petstore.swagger.io
+basePath: "/v1"
+schemes:
+- http
+consumes:
+- application/json
+produces:
+- application/json
+paths:
+  "/schemaless":
+    x-controller: mocks
+    get:
+      operationId: Schemaless
+      parameters:
+      - "$ref": "#/parameters/mock"
+      responses:
+        '204':
+          description: 'Empty response'
+  "/CtrlDevMockImpl":
+    x-controller: mocks
+    get:
+      operationId: CtrlDevMockImpl
+      parameters:
+      - "$ref": "#/parameters/mock"
+      responses:
+        '200':
+          description: CtrlDevMockImpl
+          examples:
+            application/json:
+              name: CtrlDevMockImpl200JSON
+            application/foo:
+              name: CtrlDevMockImpl200Foo
+          schema:
+            "$ref": "#/definitions/Descriptor"
+        '201':
+          description: CtrlDevMockImpl
+          examples:
+            application/json:
+              name: CtrlDevMockImpl201JSON
+          schema:
+            "$ref": "#/definitions/Descriptor"
+  "/CtrlDevMock_Impl":
+    x-controller: mocks
+    get:
+      operationId: CtrlDevMock_Impl
+      parameters:
+      - "$ref": "#/parameters/mock"
+      responses:
+        '200':
+          description: CtrlDevMock_Impl
+          examples:
+            application/json:
+              name: CtrlDevMock_Impl200JSON
+            application/foo:
+              name: CtrlDevMock_Impl200Foo
+          schema:
+            "$ref": "#/definitions/Descriptor"
+        '201':
+          description: CtrlDevMock_Impl
+          examples:
+            application/json:
+              name: CtrlDevMock_Impl201JSON
+          schema:
+            "$ref": "#/definitions/Descriptor"
+  "/CtrlDev_MockImpl":
+    x-controller: mocks
+    get:
+      operationId: CtrlDev_MockImpl
+      responses:
+        '200':
+          description: CtrlDev_MockImpl
+          examples:
+            application/json:
+              name: CtrlDev_MockImpl200JSON
+            application/foo:
+              name: CtrlDev_MockImpl200Foo
+          schema:
+            "$ref": "#/definitions/Descriptor"
+        '201':
+          description: CtrlDev_MockImpl
+          examples:
+            application/json:
+              name: CtrlDev_MockImpl201JSON
+          schema:
+            "$ref": "#/definitions/Descriptor"
+  "/CtrlDev_Mock_Impl":
+    x-controller: mocks
+    get:
+      operationId: CtrlDev_Mock_Impl
+      responses:
+        '200':
+          description: CtrlDev_Mock_Impl
+          examples:
+            application/json:
+              name: CtrlDev_Mock_Impl200JSON
+            application/foo:
+              name: CtrlDev_Mock_Impl200Foo
+          schema:
+            "$ref": "#/definitions/Descriptor"
+        '201':
+          description: CtrlDev_Mock_Impl
+          examples:
+            application/json:
+              name: CtrlDev_Mock_Impl201JSON
+          schema:
+            "$ref": "#/definitions/Descriptor"
+  "/Ctrl_DevMockImpl":
+    x-controller: mocks
+    get:
+      operationId: Ctrl_DevMockImpl
+      parameters:
+      - "$ref": "#/parameters/mock"
+      responses:
+        '200':
+          description: Ctrl_DevMockImpl
+          examples:
+            application/json:
+              name: Ctrl_DevMockImpl200JSON
+            application/foo:
+              name: Ctrl_DevMockImpl200Foo
+          schema:
+            "$ref": "#/definitions/Descriptor"
+        '201':
+          description: Ctrl_DevMockImpl
+          examples:
+            application/json:
+              name: Ctrl_DevMockImpl201JSON
+          schema:
+            "$ref": "#/definitions/Descriptor"
+  "/Ctrl_DevMock_Impl":
+    x-controller: mocks
+    get:
+      operationId: Ctrl_DevMock_Impl
+      parameters:
+      - "$ref": "#/parameters/mock"
+      responses:
+        '200':
+          description: Ctrl_DevMock_Impl
+          examples:
+            application/json:
+              name: Ctrl_DevMock_Impl200JSON
+            application/foo:
+              name: Ctrl_DevMock_Impl200Foo
+          schema:
+            "$ref": "#/definitions/Descriptor"
+        '201':
+          description: Ctrl_DevMock_Impl
+          examples:
+            application/json:
+              name: Ctrl_DevMock_Impl201JSON
+          schema:
+            "$ref": "#/definitions/Descriptor"
+  "/Ctrl_Dev_MockImpl":
+    x-controller: mocks
+    get:
+      operationId: Ctrl_Dev_MockImpl
+      responses:
+        '200':
+          description: Ctrl_Dev_MockImpl
+          examples:
+            application/json:
+              name: Ctrl_Dev_MockImpl200JSON
+            application/foo:
+              name: Ctrl_Dev_MockImpl200Foo
+          schema:
+            "$ref": "#/definitions/Descriptor"
+        '201':
+          description: Ctrl_Dev_MockImpl
+          examples:
+            application/json:
+              name: Ctrl_Dev_MockImpl201JSON
+          schema:
+            "$ref": "#/definitions/Descriptor"
+  "/Ctrl_Dev_Mock_Impl":
+    x-controller: mocks
+    get:
+      operationId: Ctrl_Dev_Mock_Impl
+      responses:
+        '200':
+          description: Ctrl_Dev_Mock_Impl
+          examples:
+            application/json:
+              name: Ctrl_Dev_Mock_Impl200JSON
+            application/foo:
+              name: Ctrl_Dev_Mock_Impl200Foo
+          schema:
+            "$ref": "#/definitions/Descriptor"
+        '201':
+          description: Ctrl_Dev_Mock_Impl
+          examples:
+            application/json:
+              name: Ctrl_Dev_Mock_Impl201JSON
+          schema:
+            "$ref": "#/definitions/Descriptor"
+  "/_CtrlDevMockImpl":
+    get:
+      operationId: _CtrlDevMockImpl
+      parameters:
+      - "$ref": "#/parameters/mock"
+      responses:
+        '200':
+          description: _CtrlDevMockImpl
+          examples:
+            application/json:
+              name: _CtrlDevMockImpl200JSON
+            application/foo:
+              name: _CtrlDevMockImpl200Foo
+          schema:
+            "$ref": "#/definitions/Descriptor"
+        '201':
+          description: _CtrlDevMockImpl
+          examples:
+            application/json:
+              name: _CtrlDevMockImpl201JSON
+          schema:
+            "$ref": "#/definitions/Descriptor"
+  "/_CtrlDevMock_Impl":
+    get:
+      operationId: _CtrlDevMock_Impl
+      parameters:
+      - "$ref": "#/parameters/mock"
+      responses:
+        '200':
+          description: _CtrlDevMock_Impl
+          examples:
+            application/json:
+              name: _CtrlDevMock_Impl200JSON
+            application/foo:
+              name: _CtrlDevMock_Impl200Foo
+          schema:
+            "$ref": "#/definitions/Descriptor"
+        '201':
+          description: _CtrlDevMock_ImplImpl
+          examples:
+            application/json:
+              name: _CtrlDevMock_Impl201JSON
+          schema:
+            "$ref": "#/definitions/Descriptor"
+  "/_CtrlDev_MockImpl":
+    get:
+      operationId: _CtrlDev_MockImpl
+      responses:
+        '200':
+          description: _CtrlDev_MockImpl
+          examples:
+            application/json:
+              name: _CtrlDev_MockImpl200JSON
+            application/foo:
+              name: _CtrlDev_MockImpl200Foo
+          schema:
+            "$ref": "#/definitions/Descriptor"
+        '201':
+          description: _CtrlDev_MockImpl
+          examples:
+            application/json:
+              name: _CtrlDev_MockImpl201JSON
+          schema:
+            "$ref": "#/definitions/Descriptor"
+  "/_CtrlDev_Mock_Impl":
+    get:
+      operationId: _CtrlDev_Mock_Impl
+      responses:
+        '200':
+          description: _CtrlDev_Mock_Impl
+          examples:
+            application/json:
+              name: _CtrlDev_Mock_Impl200JSON
+            application/foo:
+              name: _CtrlDev_Mock_Impl200Foo
+          schema:
+            "$ref": "#/definitions/Descriptor"
+        '201':
+          description: _CtrlDev_Mock_Impl
+          examples:
+            application/json:
+              name: _CtrlDev_Mock_Impl201JSON
+          schema:
+            "$ref": "#/definitions/Descriptor"
+  "/_Ctrl_DevMockImpl":
+    get:
+      operationId: _Ctrl_DevMockImpl
+      parameters:
+      - "$ref": "#/parameters/mock"
+      responses:
+        '200':
+          description: _Ctrl_DevMockImpl
+          examples:
+            application/json:
+              name: _Ctrl_DevMockImpl200JSON
+            application/foo:
+              name: _Ctrl_DevMockImpl200Foo
+          schema:
+            "$ref": "#/definitions/Descriptor"
+        '201':
+          description: _Ctrl_DevMockImpl
+          examples:
+            application/json:
+              name: _Ctrl_DevMockImpl201JSON
+          schema:
+            "$ref": "#/definitions/Descriptor"
+  "/_Ctrl_DevMock_Impl":
+    get:
+      operationId: _Ctrl_DevMock_Impl
+      parameters:
+      - "$ref": "#/parameters/mock"
+      responses:
+        '200':
+          description: _Ctrl_DevMock_Impl
+          examples:
+            application/json:
+              name: _Ctrl_DevMock_Impl200JSON
+            application/foo:
+              name: _Ctrl_DevMock_Impl200Foo
+          schema:
+            "$ref": "#/definitions/Descriptor"
+        '201':
+          description: _Ctrl_DevMock_Impl
+          examples:
+            application/json:
+              name: _Ctrl_DevMock_Impl201JSON
+          schema:
+            "$ref": "#/definitions/Descriptor"
+  "/_Ctrl_Dev_MockImpl":
+    get:
+      operationId: _Ctrl_Dev_MockImpl
+      responses:
+        '200':
+          description: _Ctrl_Dev_MockImpl
+          examples:
+            application/json:
+              name: _Ctrl_Dev_MockImpl200JSON
+            application/foo:
+              name: _Ctrl_Dev_MockImpl200Foo
+          schema:
+            "$ref": "#/definitions/Descriptor"
+        '201':
+          description: _Ctrl_Dev_MockImpl
+          examples:
+            application/json:
+              name: _Ctrl_Dev_MockImpl201JSON
+          schema:
+            "$ref": "#/definitions/Descriptor"
+  "/_Ctrl_Dev_Mock_Impl":
+    get:
+      operationId: _Ctrl_Dev_Mock_Impl
+      responses:
+        '200':
+          description: _Ctrl_Dev_Mock_Impl
+          examples:
+            application/json:
+              name: _Ctrl_Dev_Mock_Impl200JSON
+            application/foo:
+              name: _Ctrl_Dev_Mock_Impl200Foo
+          schema:
+            "$ref": "#/definitions/Descriptor"
+        '201':
+          description: _Ctrl_Dev_Mock_Impl
+          examples:
+            application/json:
+              name: _Ctrl_Dev_Mock_Impl201JSON
+          schema:
+            "$ref": "#/definitions/Descriptor"
+parameters:
+  mock:
+    name: mock
+    in: query
+    description: Produces a mocked response.
+    required: false
+    type: string
+definitions:
+  Descriptor:
+    properties:
+      name:
+        type: string
