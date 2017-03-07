@@ -20,7 +20,51 @@ const expect            = require('chai').expect;
 
 describe('deserialize', () => {
 
-    it('can deserialize an array', () => {
+    describe('can deserialize an array', () => {
+
+        it('from default (csv)', () => {
+            const str = '1,2,3';
+            const schema = {
+                items: { type: 'number' }
+            };
+            expect(deserialize.array(str, schema)).to.deep.equal([1, 2, 3]);
+        });
+
+        it('from csv', () => {
+            const str = '1,2,3';
+            const schema = {
+                items: { type: 'number' },
+                collectionFormat: 'csv'
+            };
+            expect(deserialize.array(str, schema)).to.deep.equal([1, 2, 3]);
+        });
+
+        it('from ssv', () => {
+            const str = '1 2 3';
+            const schema = {
+                items: { type: 'number' },
+                collectionFormat: 'ssv'
+            };
+            expect(deserialize.array(str, schema)).to.deep.equal([1, 2, 3]);
+        });
+
+        it('from tsv', () => {
+            const str = '1\t2\t3';
+            const schema = {
+                items: { type: 'number' },
+                collectionFormat: 'tsv'
+            };
+            expect(deserialize.array(str, schema)).to.deep.equal([1, 2, 3]);
+        });
+
+        it('from pipes (|)', () => {
+            const str = '1|2|3';
+            const schema = {
+                items: { type: 'number' },
+                collectionFormat: 'pipes'
+            };
+            expect(deserialize.array(str, schema)).to.deep.equal([1, 2, 3]);
+        });
 
     });
 
@@ -39,12 +83,51 @@ describe('deserialize', () => {
 
     });
 
-    it('can deserialize boolean', () => {
-        expect(deserialize.boolean('true')).to.equal(true);
-        expect(deserialize.boolean('false')).to.equal(false);
+    describe('can deserialize boolean', () => {
+
+        it('"true" is true', () => {
+            expect(deserialize.boolean('true')).to.be.true;
+        });
+
+        it('"false" is false', () => {
+            expect(deserialize.boolean('false')).to.be.false;
+        });
+
+        it('"1" is true', () => {
+            expect(deserialize.boolean('1')).to.be.true;
+        });
+
+        it('"0" is false', () => {
+            expect(deserialize.boolean('0')).to.be.false;
+        });
+
+        it('"null" is false', () => {
+            expect(deserialize.boolean('null')).to.be.false;
+        });
+
+        it('"" is false', () => {
+            expect(deserialize.boolean('')).to.be.false;
+        });
+
+        it('non empty string is true', () => {
+            expect(deserialize.boolean('abc')).to.be.true;
+        });
+
     });
 
-    it('can deserialize byte', () => {
+    describe('can deserialize byte', () => {
+
+        let v;
+
+        before(() => v = deserialize.byte('aGVsbG8='));
+
+        it('creates a buffer', () => {
+            expect(v).to.be.instanceOf(Buffer);
+        });
+
+        it('value is valid', () => {
+            expect(v.toString('utf8')).to.equal('hello');
+        });
 
     });
 

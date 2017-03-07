@@ -17,6 +17,11 @@
 'use strict';
 const normalize         = require('./normalize');
 
+/**
+ * Deserialize request parameters.
+ * @param {object} req
+ * @param {object[]} parameters
+ */
 exports.request = function(req, parameters) {
     parameters.forEach(param => {
         const name = param.name;
@@ -47,6 +52,12 @@ exports.request = function(req, parameters) {
     });
 };
 
+/**
+ * Deserialize a string by type.
+ * @param {string} value
+ * @param {object} schema
+ * @returns {*}
+ */
 exports.byType = function(value, schema) {
     const type = normalize.schemaType(schema);
     switch (type) {
@@ -55,7 +66,7 @@ exports.byType = function(value, schema) {
         case 'file': return;
         case 'integer': return exports.integer(value, schema);
         case 'number': return exports.number(value, schema);
-        case 'object': return exports.object(value, schema);
+        //case 'object': return exports.object(value, schema);
         case 'string':
             if (!schema.hasOwnProperty('format')) return exports.string(value, schema);
             switch (schema.format) {
@@ -73,7 +84,13 @@ exports.byType = function(value, schema) {
 
 
 exports.array = function(value, schema) {
-    if (!Array.isArray(value) || !schema.items) return value;
+    const format = schema.hasOwnProperty('collectionFormat') ? schema.collectionFormat : 'csv';
+    const delimiter = format === 'csv' ? ','
+        : format === 'ssv' ? ' '
+        : format === 'tsv' ? '\t'
+        : format === 'pipes' ? '|' : ',';
+    value = value.split(delimiter);
+    if (!schema.items) return value;
     return value.map(item => {
         return exports.byType(item, schema.items);
     });
@@ -127,13 +144,18 @@ exports.number = function(value) {
     return isNaN(value) ? value : num;
 };
 
-exports.object = function(value, schema) {
+/*exports.object = function(value, schema) {
+    try {
+        value = JSON.parse(value);
+    } catch (e) {
+        value = null;
+    }
     if (!schema.schema || !value || typeof value !== 'object') return value;
     Object.keys(value).forEach(key => {
         value[key] = exports.byType(value[key], schema.schema);
     });
     return value;
-};
+};*/
 
 exports.string = function(value) {
     return value;
