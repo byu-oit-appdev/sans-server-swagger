@@ -96,9 +96,9 @@ module.exports = function (configuration) {
                                     : null;
 
                                 // validate parameter data
+                                let hasBody = false;
+                                let hasForm = false;
                                 if (Array.isArray(methodSchema.parameters)) {
-                                    let hasBody = false;
-                                    let hasForm = false;
                                     methodSchema.parameters.forEach(p => {
                                         if (p.in === 'body') hasBody = true;
                                         if (p.in === 'formData') hasForm = true;
@@ -109,9 +109,10 @@ module.exports = function (configuration) {
                                             if (err) pathErrors.push('Default value does not pass validation for parameter: ' + p.name);
                                         }
                                     });
-
-                                    if (hasBody && hasForm) pathErrors.push('Cannot have both body and formData parameters.');
                                 }
+
+                                // validate that parameters do not use both mutually exclusive body and formData
+                                if (hasBody && hasForm) pathErrors.push('Cannot have both body and formData parameters.');
 
                                 // report any path errors
                                 if (pathErrors.length > 0) {
@@ -126,6 +127,7 @@ module.exports = function (configuration) {
                                     let validateResponse = true;
 
                                     // deserialize the request parameters
+                                    if (hasForm) deserialize.formParser(req, methodSchema.parameters);
                                     if (Array.isArray(methodSchema.parameters)) deserialize.request(req, methodSchema.parameters);
 
                                     // validate the request
@@ -146,7 +148,7 @@ module.exports = function (configuration) {
                                                 ? 'Invalid swagger response code: ' + state.statusCode
                                                 : responseDefinition.schema ? validate.response(state.body, responseDefinition.schema, 24) : null;
 
-                                            // if there is an error then update the response message
+                                            // if there is an error then update the resonse message
                                             if (err) {
                                                 server.log('swagger-error', err);
                                                 res.error = Error(err);
