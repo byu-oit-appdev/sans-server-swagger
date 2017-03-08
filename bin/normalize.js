@@ -81,6 +81,6 @@ exports.schemaType = function(schema) {
         case 'string':
             return type;
         default:
-            return null;
+            return 'string';
     }
 };
