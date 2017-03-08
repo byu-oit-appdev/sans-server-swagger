@@ -26,6 +26,10 @@ module.exports = Typed({
             required: true,
             transform: p => path.resolve(process.cwd(), p)
         },
+        endpoint: {
+            type: String,
+            default: '/swagger'
+        },
         development: {
             type: Boolean,
             default: false

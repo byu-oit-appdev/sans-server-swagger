@@ -57,6 +57,13 @@ module.exports = function (configuration) {
                 loadController(config.controllers, swagger['x-controller'], config.development) :
                 null;
 
+            // if there is a swagger endpoint then define that path
+            if (config.endpoint) {
+                router.get(config.ignoreBasePath ? config.endpoint : swagger.basePath + config.endpoint, (req, res) => {
+                    res.send(200, swaggerString, { 'Content-Type': 'application/json' });
+                });
+            }
+
             if (swagger.hasOwnProperty('paths')) {
                 Object.keys(swagger.paths)
                     .forEach(path => {
