@@ -155,4 +155,204 @@ describe('deserialize', () => {
         expect(deserialize.string('foo')).to.equal('foo');
     });
 
+    describe('request', () => {
+        const req = {};
+
+        beforeEach(() => {
+            req.body = '';
+            req.headers = {};
+            req.params = {};
+            req.query = {};
+        });
+
+        describe('body', () => {
+            const params = [];
+
+            beforeEach(() => {
+                params[0] = {
+                    in: 'body',
+                    schema: { type: 'string' }
+                };
+            });
+
+            it('can be an array', () => {
+                params[0].schema = {
+                    type: 'array',
+                    items: {
+                        type: 'number'
+                    }
+                };
+                req.body = JSON.stringify([1,2,3]);
+                deserialize.request(req, params);
+                expect(req.body).to.deep.equal([1,2,3]);
+            });
+
+            it('can be a boolean', () => {
+                params[0].schema.type = 'boolean';
+                req.body = 'false';
+                deserialize.request(req, params);
+                expect(req.body).to.be.false;
+            });
+
+            it('can be an integer', () => {
+                params[0].schema.type = 'integer';
+                req.body = '1234';
+                deserialize.request(req, params);
+                expect(req.body).to.equal(1234);
+            });
+
+            it('can be a number', () => {
+                params[0].schema.type = 'number';
+                req.body = '12.34';
+                deserialize.request(req, params);
+                expect(req.body).to.equal(12.34);
+            });
+
+            it('can be a string', () => {
+                params[0].schema.type = 'string';
+                req.body = 'hello';
+                deserialize.request(req, params);
+                expect(req.body).to.equal('hello');
+            });
+
+            describe('string formats', () => {
+
+                it('binary', () => {
+                    params[0].schema.format = 'binary';
+                    req.body = '0110100001100101011011000110110001101111';
+                    deserialize.request(req, params);
+                    expect(req.body.toString('utf8')).to.equal('hello');
+                });
+
+                it('byte', () => {
+                    params[0].schema.format = 'byte';
+                    req.body = 'aGVsbG8=';
+                    deserialize.request(req, params);
+                    expect(req.body.toString('utf8')).to.equal('hello');
+                });
+
+                it('date', () => {
+                    const d = new Date(2000, 0, 1);
+                    params[0].schema.format = 'date';
+                    req.body = '2000-01-01';
+                    deserialize.request(req, params);
+                    expect(+req.body).to.equal(+d);
+                });
+
+                it('date-time', () => {
+                    const d = new Date(2000, 0, 1, 15, 5, 18, 123);
+                    params[0].schema.format = 'date-time';
+                    req.body = '2000-01-01T15:05:18.123Z';
+                    deserialize.request(req, params);
+                    expect(+req.body).to.equal(+d);
+                });
+
+            });
+
+            it('can be an object', () => {
+                const o = { foo: 'bar' };
+                params[0].schema.type = 'object';
+                req.body = JSON.stringify(o);
+                deserialize.request(req, params);
+                expect(req.body).to.deep.equal(o);
+            });
+
+        });
+
+        runParamTests('header', req, 'headers');
+        runParamTests('path', req, 'params');
+        runParamTests('query', req, 'query');
+
+    });
+
 });
+
+function runParamTests(inValue, req, property) {
+
+    describe(inValue, () => {
+        const params = [];
+
+        beforeEach(() => {
+            params[0] = {
+                name: 'myParam',
+                in: inValue,
+                type: 'string'
+            };
+        });
+
+        it('can be an array', () => {
+            params[0].type = 'array';
+            params[0].items = { type: 'number' };
+            req[property].myParam = '1,2,3';
+            deserialize.request(req, params);
+            expect(req[property].myParam).to.deep.equal([1,2,3]);
+        });
+
+        it('can be a boolean', () => {
+            params[0].type = 'boolean';
+            req[property].myParam = 'false';
+            deserialize.request(req, params);
+            expect(req[property].myParam).to.be.false;
+        });
+
+        it('can be an integer', () => {
+            params[0].type = 'integer';
+            req[property].myParam = '1234';
+            deserialize.request(req, params);
+            expect(req[property].myParam).to.equal(1234);
+        });
+
+        it('can be a number', () => {
+            params[0].type = 'number';
+            req[property].myParam = '12.34';
+            deserialize.request(req, params);
+            expect(req[property].myParam).to.equal(12.34);
+        });
+
+        it('can be a string', () => {
+            params[0].type = 'string';
+            req[property].myParam = 'hello';
+            deserialize.request(req, params);
+            expect(req[property].myParam).to.equal('hello');
+        });
+
+        describe('string formats', () => {
+
+            beforeEach(() => {
+                params[0].type = 'string';
+            });
+
+            it('binary', () => {
+                params[0].format = 'binary';
+                req[property].myParam = '0110100001100101011011000110110001101111';
+                deserialize.request(req, params);
+                expect(req[property].myParam.toString('utf8')).to.equal('hello');
+            });
+
+            it('byte', () => {
+                params[0].format = 'byte';
+                req[property].myParam = 'aGVsbG8=';
+                deserialize.request(req, params);
+                expect(req[property].myParam.toString('utf8')).to.equal('hello');
+            });
+
+            it('date', () => {
+                const d = new Date(2000, 0, 1);
+                params[0].format = 'date';
+                req[property].myParam = '2000-01-01';
+                deserialize.request(req, params);
+                expect(+req[property].myParam).to.equal(+d);
+            });
+
+            it('date-time', () => {
+                const d = new Date(2000, 0, 1, 15, 5, 18, 123);
+                params[0].format = 'date-time';
+                req[property].myParam = '2000-01-01T15:05:18.123Z';
+                deserialize.request(req, params);
+                expect(+req[property].myParam).to.equal(+d);
+            });
+
+        });
+
+    });
+}
