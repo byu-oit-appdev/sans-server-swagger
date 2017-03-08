@@ -15,6 +15,7 @@
  *    limitations under the License.
  **/
 'use strict';
+const checkSwagger      = require('./check-swagger');
 const deserialize       = require('./deserialize');
 const fs                = require('fs');
 const jsonRefs          = require('json-refs');
@@ -44,8 +45,8 @@ module.exports = function (configuration) {
     // resolve swagger json references and process swagger object
     const promise = jsonRefs.resolveRefs(swagger)
         .then(data => {
-            const swagggerErrors = [];
             const swagger = data.resolved;
+            const swagggerErrors = checkSwagger(swagger);
 
             // normalize required properties
             transitionRequiredToProperties(swagger);
@@ -233,7 +234,6 @@ module.exports = function (configuration) {
             // if there are swagger errors then exit the process
             if (swagggerErrors.length > 0) {
                 console.error('One or more errors found in the swagger document:\n  ' + swagggerErrors.join('\n  '));
-                process.exit(1);
             }
 
             ready = true;
