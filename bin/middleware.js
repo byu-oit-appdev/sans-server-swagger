@@ -95,13 +95,23 @@ module.exports = function (configuration) {
                                     ? controller[methodSchema.operationId]
                                     : null;
 
-                                // validate default parameter values
-                                if (Array.isArray(methodSchema.parameters)) methodSchema.parameters.forEach(p => {
-                                    if (p.hasOwnProperty('default')) {
-                                        const err = validate.byType(p.default, p, 0);
-                                        if (err) pathErrors.push('Default value does not pass validation for parameter: ' + p.name);
-                                    }
-                                });
+                                // validate parameter data
+                                if (Array.isArray(methodSchema.parameters)) {
+                                    let hasBody = false;
+                                    let hasForm = false;
+                                    methodSchema.parameters.forEach(p => {
+                                        if (p.in === 'body') hasBody = true;
+                                        if (p.in === 'formData') hasForm = true;
+
+                                        // validate default parameter values
+                                        if (p.hasOwnProperty('default')) {
+                                            const err = validate.byType(p.default, p, 0);
+                                            if (err) pathErrors.push('Default value does not pass validation for parameter: ' + p.name);
+                                        }
+                                    });
+
+                                    if (hasBody && hasForm) pathErrors.push('Cannot have both body and formData parameters.');
+                                }
 
                                 // report any path errors
                                 if (pathErrors.length > 0) {
