@@ -28,13 +28,22 @@ exports.request = function(req, parameters) {
         const hasDefault = param.hasOwnProperty('default');
         switch (param.in) {
             case 'body':
-            case 'formData':
+                // TODO: check if body has been set - empty string setting should not use default
                 if (!req.body && hasDefault) {
                     req.body = typeof param.default === 'object'
                         ? JSON.parse(JSON.stringify(param.default))
                         : param.default;
+                } else if (req.body && param.schema && typeof param.schema === 'object') {
+                    const type = normalize.schemaType(param.schema);
+                    if (type === 'array' || type === 'object') {
+                        req.body = JSON.parse(req.body);
+                    } else {
+                        req.body = exports.byType(req.body, param.schema);
+                    }
                 }
-                if (req.body) req.body = exports.byType(req.body, param);
+                break;
+            case 'formData':
+                // TODO
                 break;
             case 'header':
                 if (!req.headers.hasOwnProperty(name) && hasDefault) req.headers[name] = param.default;
@@ -62,13 +71,12 @@ exports.byType = function(value, schema) {
     const type = normalize.schemaType(schema);
     switch (type) {
         case 'array': return exports.array(value, schema);
-        case 'boolean': return;
-        case 'file': return;
+        case 'boolean': return exports.boolean(value);
+        case 'file': return value; // TODO implement file deserialization
         case 'integer': return exports.integer(value, schema);
         case 'number': return exports.number(value, schema);
         //case 'object': return exports.object(value, schema);
         case 'string':
-            if (!schema.hasOwnProperty('format')) return exports.string(value, schema);
             switch (schema.format) {
                 case 'binary': return exports.binary(value, schema);
                 case 'byte': return exports.byte(value, schema);
@@ -76,10 +84,13 @@ exports.byType = function(value, schema) {
                 case 'date-time': return exports.dateTime(value, schema);
                 default: return exports.string(value, schema);
             }
-            break;
     }
-    return value;
 };
+
+exports.formParser = function(req, parameters) {
+    // TODO - parses the body string as a form
+};
+
 
 
 
