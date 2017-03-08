@@ -47,6 +47,7 @@ module.exports = function (configuration) {
         .then(data => {
             const swagger = data.resolved;
             const swagggerErrors = checkSwagger(swagger);
+            const swaggerString = JSON.stringify(swagger);
 
             // normalize required properties
             transitionRequiredToProperties(swagger);
@@ -191,6 +192,7 @@ module.exports = function (configuration) {
                                         // check for a mock property on the operation ID
                                         if (handler && typeof handler.mock === 'function') {
                                             server.log('mock', 'Executing mock from code.');
+                                            req.swagger = JSON.parse(swaggerString);
                                             executeController(server, handler.mock, req, res);
 
                                         // schema-less response mocking
@@ -220,6 +222,7 @@ module.exports = function (configuration) {
 
                                     // if there is a controller then run it
                                     } else if (handler) {
+                                        req.swagger = JSON.parse(swaggerString);
                                         executeController(server, handler, req, res);
 
                                     } else {
