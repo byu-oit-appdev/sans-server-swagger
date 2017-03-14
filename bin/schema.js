@@ -40,7 +40,7 @@ module.exports = Typed({
         },
         router: {
             type: Function,
-            required: true,
+            required: true
         },
         swagger: {
             type: String,
