@@ -214,8 +214,8 @@ module.exports = function (configuration) {
                                         } else {
                                             server.log('mock', 'Executing mock from example.');
                                             const examples = responseSchema && methodSchema.responses[mockCode].examples;
-                                            const accept = req.headers.hasOwnProperty('Accept')
-                                                ? req.headers.Accept
+                                            const accept = req.headers.hasOwnProperty('accept')
+                                                ? req.headers.accept
                                                 : Array.isArray(swagger.produces) && swagger.produces.length > 0
                                                     ? swagger.produces[0]
                                                     : examples && Object.keys(examples)[0];
