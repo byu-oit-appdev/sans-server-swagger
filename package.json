@@ -1,6 +1,6 @@
 {
   "name": "sans-server-swagger",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Sans-Server middleware that uses swagger documents to define routes, validate requests, validate responses, and to produce mocks.",
   "main": "index.js",
   "scripts": {
