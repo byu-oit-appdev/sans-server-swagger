@@ -25,10 +25,10 @@ module.exports = function(swagger) {
     if (refErrors.length > 0) errors.push('One or more $ref could not be resolved:\n    ' + refErrors.join('\n    '));
 
     // check that if any parameters are in formData that consumes allows application/x-www-form-urlencoded or multipart/form-data
-    const fileParamsAllowed = (swagger.consumes || [])
+    const formParamsAllowed = (swagger.consumes || [])
             .filter(str => str === 'application/x-www-form-urlencoded' || str === 'multipart/form-data')
             .length > 0;
-    if (!fileParamsAllowed && swagger.paths) {
+    if (!formParamsAllowed && swagger.paths) {
         const pathsWithFormParams = [];
         Object.keys(swagger.paths).forEach(path => {
             Object.keys(swagger.paths[path]).filter(method => methods[method]).forEach(method => {
