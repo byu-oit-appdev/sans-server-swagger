@@ -15,6 +15,7 @@
  *    limitations under the License.
  **/
 'use strict';
+const bodyParser        = require('./body-parser');
 const checkSwagger      = require('./check-swagger');
 const deserialize       = require('./deserialize');
 const fs                = require('fs');
@@ -63,6 +64,9 @@ module.exports = function (configuration) {
                     res.send(200, swaggerString, { 'Content-Type': 'application/json' });
                 });
             }
+
+            // check if the swagger consumes form input
+            const bodyParserMiddleware = bodyParser(swagger.consumes);
 
             if (swagger.hasOwnProperty('paths')) {
                 Object.keys(swagger.paths)
@@ -131,7 +135,7 @@ module.exports = function (configuration) {
                                 }
 
                                 // define the route
-                                router[method](fullPath, function(req, res) {
+                                router[method](fullPath, bodyParserMiddleware, function(req, res) {
                                     const server = this;
                                     let validateResponse = true;
 
