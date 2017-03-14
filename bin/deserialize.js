@@ -33,7 +33,7 @@ exports.request = function(req, parameters) {
                     req.body = typeof param.default === 'object'
                         ? JSON.parse(JSON.stringify(param.default))
                         : param.default;
-                } else if (req.body && param.schema && typeof param.schema === 'object') {
+                } else if (typeof req.body === 'string' && param.schema && typeof param.schema === 'object') {
                     const type = normalize.schemaType(param.schema);
                     if (type === 'array' || type === 'object') {
                         req.body = JSON.parse(req.body);
