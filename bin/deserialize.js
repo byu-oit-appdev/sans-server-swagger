@@ -29,7 +29,7 @@ exports.request = function(req, parameters) {
         switch (param.in) {
             case 'body':
                 // TODO: check if body has been set - empty string setting should not use default
-                if (!req.body && hasDefault) {
+                if (typeof req.body === 'undefined' && hasDefault) {
                     req.body = typeof param.default === 'object'
                         ? JSON.parse(JSON.stringify(param.default))
                         : param.default;
@@ -85,10 +85,6 @@ exports.byType = function(value, schema) {
                 default: return exports.string(value, schema);
             }
     }
-};
-
-exports.formParser = function(req, parameters) {
-    // TODO - parses the body string as a form
 };
 
 

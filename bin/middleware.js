@@ -140,7 +140,6 @@ module.exports = function (configuration) {
                                     let validateResponse = true;
 
                                     // deserialize the request parameters
-                                    if (hasForm) deserialize.formParser(req, methodSchema.parameters);
                                     if (Array.isArray(methodSchema.parameters)) deserialize.request(req, methodSchema.parameters);
 
                                     // validate the request
