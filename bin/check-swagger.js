@@ -15,12 +15,34 @@
  *    limitations under the License.
  **/
 'use strict';
+const methods = { get: true, post: true, put: true, delete: true, options: true, head: true, patch: true };
 
 module.exports = function(swagger) {
     const errors = [];
 
+    // check for unresolved $ref errors
     const refErrors = findRefs([], swagger, 'root');
     if (refErrors.length > 0) errors.push('One or more $ref could not be resolved:\n    ' + refErrors.join('\n    '));
+
+    // check that if any parameters are of type file that consumes allows application/x-www-form-urlencoded or multipart/form-data
+    const fileParamsAllowed = (swagger.consumes || [])
+            .filter(str => str === 'application/x-www-form-urlencoded' || str === 'multipart/form-data')
+            .length > 0;
+    if (!fileParamsAllowed && swagger.paths) {
+        const pathsWithFileParams = [];
+        Object.keys(swagger.paths).forEach(path => {
+            Object.keys(swagger.paths[path]).filter(method => methods[method]).forEach(method => {
+                const o = swagger.paths[path][method];
+                const params = (o && typeof o === 'object' && typeof o.parameters === 'object' && o.parameters) || [];
+                if (params.filter(p => p.type === 'file').length > 0) pathsWithFileParams.push(method.toUpperCase() + ' ' + path);
+            });
+        });
+        if (pathsWithFileParams.length > 0) {
+            errors.push('One or more paths allow file parameters so the swagger definition must consume ' +
+                'application/x-www-form-urlencoded and/or multipart/form-data. Paths in error:\n    ' +
+                pathsWithFileParams.join('\n    '));
+        }
+    }
 
     return errors;
 };
