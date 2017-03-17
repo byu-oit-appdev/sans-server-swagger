@@ -33,7 +33,7 @@ exports.request = function(req, schema) {
                         if (typeof req.body !== 'undefined') o[name] = req.body;
                         return o;
                     case 'formData':
-                        errors.push('Parameter type "formData" not yet supported'); //TODO: add this functionality to allow file uploads
+                        return req.body;
                         break;
                     case 'header': return req.headers;
                     case 'path': return req.params;
