@@ -28,7 +28,6 @@ exports.request = function(req, parameters) {
         const hasDefault = param.hasOwnProperty('default');
         switch (param.in) {
             case 'body':
-                // TODO: check if body has been set - empty string setting should not use default
                 if (typeof req.body === 'undefined' && hasDefault) {
                     req.body = typeof param.default === 'object'
                         ? JSON.parse(JSON.stringify(param.default))
@@ -43,7 +42,10 @@ exports.request = function(req, parameters) {
                 }
                 break;
             case 'formData':
-                // TODO
+                if (typeof req.body === 'object') {
+                    if (!req.body.hasOwnProperty(name) && hasDefault) req.body[name] = param.default;
+                    if (req.body.hasOwnProperty(name)) req.body[name] = exports.byType(req.body[name], param);
+                }
                 break;
             case 'header':
                 if (!req.headers.hasOwnProperty(name) && hasDefault) req.headers[name] = param.default;
