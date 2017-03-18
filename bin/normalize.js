@@ -60,6 +60,18 @@ exports.dateToString = function(value) {
     return value.getFullYear() + '-' + month + '-' + day + ' ' + hour + ':' + minute + ':' + second;
 };
 
+exports.partialObject = function(object, properties) {
+    if (object && typeof object === 'object') {
+        const result = {};
+        properties.forEach(key => {
+            if (object.hasOwnProperty(key)) result[key] = object[key];
+        });
+        return result;
+    } else {
+        return object;
+    }
+};
+
 exports.schemaType = function(schema) {
     let type = null;
     if (schema.hasOwnProperty('schema')) schema = schema.schema;
