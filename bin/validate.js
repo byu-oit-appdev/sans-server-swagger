@@ -69,8 +69,17 @@ exports.request = function(req, schema) {
     if (errors.length > 0) return 'Request invalid due to one or more errors:\n  ' + errors.join('\n  ');
 };
 
-exports.response = function(value, schema, depth) {
-    const err = exports.byType(value, schema, depth);
+exports.response = function(value, schema, definitions, depth) {
+    let err;
+    if (Array.isArray(schema.allOf)) {
+        err = allOfValidation(value, schema.allOf, depth);
+    } else if (schema.discriminator) {
+        const allOf = [ schema ];
+        err = buildAllOfForDiscriminator(value, schema.discriminator, definitions, allOf);
+        if (!err) err = allOfValidation(value, allOf, depth);
+    } else {
+        err = exports.byType(value, schema, depth);
+    }
     if (err) return 'Response did not meet swagger requirements:\n' + err;
 };
 
@@ -252,6 +261,50 @@ exports.string = function(value, schema, depth) {
 
     return generic(value, schema, depth);
 };
+
+
+
+// validate multiple schemas
+function allOfValidation(value, allOf, depth) {
+    const error = errorGen(value, depth);
+    if (!value || typeof value !== 'object') return error('Expected a non-null object to exercise allOf validation.');
+
+    // TODO: add a check that all properties have been validated otherwise the partial will skip properties that shouldn't be there
+
+    const length = allOf.length;
+    for (let i = 0; i < length; i++) {
+        const schema = allOf[i];
+        if (Array.isArray(schema.allOf)) {
+            return allOfValidation(value, schema.allOf, depth);
+        } else {
+            const properties = schema.properties && typeof schema.properties === 'object' ? Object.keys(schema.properties) : [];
+            const partial = value ? normalize.partialObject(value, properties) : value;
+            const err = exports.byType(partial, schema, depth);
+            if (err) return err;
+        }
+    }
+}
+
+function buildAllOfForDiscriminator(value, discriminator, definitions, allOf) {
+    if (value && typeof value === 'object' && value.hasOwnProperty(discriminator)) {
+        const name = value[discriminator];
+        if (definitions.hasOwnProperty(name)) {
+            const definition = definitions[name];
+
+            // prevent duplicate allOfs - no need to validate same thing twice
+            if (Array.isArray(definition.allOf)) {
+                definition.allOf.forEach(d => allOf.indexOf(d) === -1 ? allOf.push(d) : null);
+            } else if (allOf.indexOf(definition) === -1) {
+                allOf.push(definition);
+            }
+            if (definition.hasOwnProperty('discriminator')) return buildAllOfForDiscriminator(value, definition.discriminator, definitions, allOf);
+        } else {
+            return 'Could not find definition "' + name + '" for discriminator "' + discriminator;
+        }
+    } else {
+        return 'Expected the value to be a non-null object with property ' + discriminator + ' to exercise discriminator validation.';
+    }
+}
 
 function errorGen(value, depth) {
     if (!depth) depth = 0;
