@@ -156,15 +156,15 @@ module.exports = function (configuration) {
                                             const responseDefinition = methodSchema.responses &&
                                                 methodSchema.responses[state.statusCode];
 
-                                            const err = !responseDefinition
+                                            const errStr = !responseDefinition
                                                 ? 'Invalid swagger response code: ' + state.statusCode
-                                                : responseDefinition.schema ? validate.response(state.body, responseDefinition.schema, 24) : null;
+                                                : responseDefinition.schema ? validate.response(state.body, responseDefinition.schema, swagger.definitions, 24) : null;
 
                                             // if there is an error then update the resonse message
-                                            if (err) {
-                                                server.log('swagger-error', err);
-                                                res.error = Error(err);
-                                                this.status(500, true);
+                                            if (errStr) {
+                                                server.log('response-error', 'Invalid response.');
+                                                const err = Error(errStr);
+                                                this.body(err);
                                             }
                                         }
                                     });
