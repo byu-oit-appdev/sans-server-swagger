@@ -1,0 +1,134 @@
+swagger: '2.0'
+info:
+  version: 1.0.0
+  title: Swagger Petstore
+  license:
+    name: MIT
+host: petstore.swagger.io
+basePath: "/v1"
+schemes:
+- http
+consumes:
+- application/json
+produces:
+- application/json
+paths:
+  "/animal":
+    get:
+      operationId: getAnimal
+      responses:
+        '200':
+          description: 'Get an animal'
+          examples:
+            application/json:
+              classification: Pet
+              warmBlooded: true
+              name: Fido
+              petType: Dog
+              packSize: 12
+            application/json-wrong:
+              classification: Pet
+              warmBlooded: true
+              name: Fido
+              petType: Dog
+              packSize: 12
+              legs: 4
+          schema:
+            $ref: "#/definitions/Animal"
+  "/dog":
+    get:
+      operationId: getDog
+      responses:
+        '200':
+          description: 'Get a dog'
+          examples:
+            application/json:
+              name: Fido
+              petType: Dog
+              packSize: 12
+            application/invalid-packSize:
+              name: Fido
+              petType: Dog
+            application/invalid-petType:
+              name: Fido
+              packSize: 12
+            application/invalid-name1:
+              petType: Dog
+              packSize: 12
+            application/invalid-name2:
+              name: {}
+              petType: Dog
+              packSize: 12
+          schema:
+            $ref: "#/definitions/Dog"
+  "/pet":
+    get:
+      operationId: getPet
+      responses:
+        '200':
+          description: 'Get a pet'
+          examples:
+            application/json-dog:
+              name: Fido
+              petType: Dog
+              packSize: 12
+            application/json-cat:
+              name: Mittens
+              petType: Cat
+              huntingSkill: clueless
+          schema:
+            $ref: "#/definitions/Pet"
+definitions:
+  Animal:
+    type: object
+    discriminator: classification
+    properties:
+      classification:
+        type: string
+      warmBlooded:
+        type: boolean
+    required:
+      - classification
+      - warmBlooded
+  Pet:
+    type: object
+    discriminator: petType
+    properties:
+      name:
+        type: string
+      petType:
+        type: string
+    required:
+    - name
+    - petType
+  Cat:
+    description: A representation of a cat
+    allOf:
+    - $ref: '#/definitions/Pet'
+    - type: object
+      properties:
+        huntingSkill:
+          type: string
+          description: The measured skill for hunting
+          default: lazy
+          enum:
+          - clueless
+          - lazy
+          - adventurous
+          - aggressive
+      required:
+      - huntingSkill
+  Dog:
+    description: A representation of a dog
+    allOf:
+    - $ref: '#/definitions/Pet'
+    - type: object
+      properties:
+        packSize:
+          type: integer
+          format: int32
+          description: the size of the pack the dog is from
+          default: 0
+          minimum: 0
+      required:
+      - packSize
