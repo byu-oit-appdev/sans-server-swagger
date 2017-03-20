@@ -72,11 +72,11 @@ exports.request = function(req, schema) {
 exports.response = function(value, schema, definitions, depth) {
     let err;
     if (Array.isArray(schema.allOf)) {
-        err = allOfValidation(value, schema.allOf, depth);
+        err = allOfValidation(value, schema.allOf, depth, Object.keys(value));
     } else if (schema.discriminator) {
         const allOf = [ schema ];
         err = buildAllOfForDiscriminator(value, schema.discriminator, definitions, allOf);
-        if (!err) err = allOfValidation(value, allOf, depth);
+        if (!err) err = allOfValidation(value, allOf, depth, Object.keys(value));
     } else {
         err = exports.byType(value, schema, depth);
     }
@@ -265,24 +265,27 @@ exports.string = function(value, schema, depth) {
 
 
 // validate multiple schemas
-function allOfValidation(value, allOf, depth) {
+function allOfValidation(value, allOf, depth, notValidated) {
     const error = errorGen(value, depth);
     if (!value || typeof value !== 'object') return error('Expected a non-null object to exercise allOf validation.');
-
-    // TODO: add a check that all properties have been validated otherwise the partial will skip properties that shouldn't be there
 
     const length = allOf.length;
     for (let i = 0; i < length; i++) {
         const schema = allOf[i];
         if (Array.isArray(schema.allOf)) {
-            return allOfValidation(value, schema.allOf, depth);
+            return allOfValidation(value, schema.allOf, depth, notValidated);
         } else {
             const properties = schema.properties && typeof schema.properties === 'object' ? Object.keys(schema.properties) : [];
             const partial = value ? normalize.partialObject(value, properties) : value;
             const err = exports.byType(partial, schema, depth);
             if (err) return err;
+
+            // remove any properties that have now been validated at least once
+            notValidated = notValidated.filter(name => properties.indexOf(name) === -1);
         }
     }
+
+    if (notValidated.length > 0) return error('Object has one or more properties that are not allowed: ' + notValidated.join(', ') + '.', ' ');
 }
 
 function buildAllOfForDiscriminator(value, discriminator, definitions, allOf) {
