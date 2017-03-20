@@ -21,7 +21,7 @@ const Router            = require('sans-server-router');
 const Swagger           = require('../index');
 const Server            = require('sans-server');
 
-describe.only('composition', () => {
+describe('composition', () => {
     let api;
 
     before(() => {
