@@ -41,7 +41,7 @@ module.exports = function (configuration) {
     // make sure that there is a basePath that starts with slash
     if (!swagger.hasOwnProperty('basePath')) swagger.basePath = '/';
     swagger.basePath = '/' + swagger.basePath.replace(/^\//, '').replace(/\/$/, '');
-    const rxBasepath = new RegExp('^\\' + swagger.basePath + '(?:\\/|\\?|$)');
+    const rxBasepath = new RegExp('^\\' + (swagger.basePath === '/' ? '' : swagger.basePath) + '(?:\\/|\\?|$)');
 
     // resolve swagger json references and process swagger object
     const promise = jsonRefs.resolveRefs(swagger)
@@ -143,7 +143,7 @@ module.exports = function (configuration) {
                                     if (Array.isArray(methodSchema.parameters)) deserialize.request(req, methodSchema.parameters);
 
                                     // validate the request
-                                    const err = validate.request(req, methodSchema);
+                                    const err = validate.request(req, methodSchema, swagger.definitions);
                                     if (err) {
                                         validateResponse = false;
                                         res.status(400);
