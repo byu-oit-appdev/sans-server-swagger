@@ -77,7 +77,7 @@ exports.schemaType = function(schema) {
     if (schema.hasOwnProperty('schema')) schema = schema.schema;
     if (schema.hasOwnProperty('type')) {
         type = schema.type;
-    } else if (schema.hasOwnProperty('properties')) {
+    } else if (schema.hasOwnProperty('properties') || schema.hasOwnProperty('allOf')) {
         type = 'object';
     } else if (schema.hasOwnProperty('items')) {
         type = 'array';
