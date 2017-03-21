@@ -41,7 +41,7 @@ module.exports = function (configuration) {
     // make sure that there is a basePath that starts with slash
     if (!swagger.hasOwnProperty('basePath')) swagger.basePath = '/';
     swagger.basePath = '/' + swagger.basePath.replace(/^\//, '').replace(/\/$/, '');
-    const rxBasepath = new RegExp('^\\' + (swagger.basePath === '/' ? '' : swagger.basePath) + '(?:\\/|\\?|$)');
+    const rxBasepath = new RegExp('^' + (swagger.basePath === '/' ? '' : '\\' + swagger.basePath) + '(?:\\/|\\?|$)');
 
     // resolve swagger json references and process swagger object
     const promise = jsonRefs.resolveRefs(swagger)
@@ -75,7 +75,7 @@ module.exports = function (configuration) {
                         const pathController = pathSchema.hasOwnProperty('x-controller') ?
                             loadController(config.controllers, pathSchema['x-controller'], config.development) :
                             globalController;
-                        const fullPath = config.ignoreBasePath ? path : swagger.basePath + path;
+                        const fullPath = config.ignoreBasePath ? path : swagger.basePath.replace(/\/$/, '') + path;
 
                         Object.keys(pathSchema)
                             .forEach(method => {
