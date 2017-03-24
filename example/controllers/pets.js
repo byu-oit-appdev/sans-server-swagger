@@ -16,6 +16,7 @@
  **/
 'use strict';
 
+// an implemented example for a path
 exports.listPets = function(req, res) {
     if (req.query.mode === 'valid') {
         res.send([
@@ -38,16 +39,22 @@ exports.listPets = function(req, res) {
     }
 };
 
-/*exports.createPets = function(req, res) {
+/*
+ Because this controller has not been implemented yet it's mock will be used
+ when in development or when there is a mock query parameter.
+  */
+/*
+exports.createPets = function(req, res) {
 
 };
-
 */
 
+// until this implementation is complete we can have it call the custom mock
 exports.showPetById = function(req, res) {
-    res.send('ok');
+    exports.showPetById.mock(req, res);     // call the mock
 };
 
+// a custom mock for this implementation
 exports.showPetById.mock = function(req, res) {
     switch (req.query.mock) {
         case '200':
