@@ -43,6 +43,7 @@ exports.request = function(req, parameters) {
                 break;
             case 'formData':
                 if (typeof req.body === 'object') {
+                    if (req.body.hasOwnProperty(name)) req.body[name] = req.body[name].content;
                     if (!req.body.hasOwnProperty(name) && hasDefault) req.body[name] = param.default;
                     if (req.body.hasOwnProperty(name)) req.body[name] = exports.byType(req.body[name], param);
                 }
