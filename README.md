@@ -82,7 +82,7 @@ In summary:
       "/pets":
         x-controller: pets          # This path will use the pets.js controller
         get:
-          x-controler: pets         # This method within this path will use the pets.js controller
+          x-controller: pets        # This method within this path will use the pets.js controller
           summary: List all pets
           operationId: listPets     # Implementation looked for in exports.listPets in pets.js file
     ```
