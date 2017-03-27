@@ -30,6 +30,7 @@ const acceptedMethods = { get: true, post: true, put: true, delete: true, option
 
 module.exports = function (configuration) {
     const config = schema.normalize(configuration);
+    const mockQP = config.mockQueryParameter;
     const router = config.router;
     let ready = false;
 
@@ -190,11 +191,11 @@ module.exports = function (configuration) {
                                     };
 
                                     // if it should be mocked
-                                    if (req.query.hasOwnProperty('mock') || (!handler && config.development)) {
-                                        req.query.mock = req.query.mock || Object.keys(methodSchema.responses)[0] || undefined;
-                                        if (!req.query.mock) delete req.query.mock;
+                                    if (req.query.hasOwnProperty(mockQP) || (!handler && config.development)) {
+                                        req.query[mockQP] = req.query[mockQP] || Object.keys(methodSchema.responses)[0] || undefined;
+                                        if (!req.query[mockQP]) delete req.query[mockQP];
 
-                                        const mockCode = parseInt(req.query.mock) || null;
+                                        const mockCode = parseInt(req.query[mockQP]) || null;
                                         res.status(mockCode || 500);
 
                                         const responseSchema = methodSchema.responses && methodSchema.responses[mockCode];

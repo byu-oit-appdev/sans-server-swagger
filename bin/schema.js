@@ -38,6 +38,11 @@ module.exports = Typed({
             type: Boolean,
             default: false
         },
+        mockQueryParameter: {
+            type: String,
+            default: 'mock',
+            minLength: 1
+        },
         router: {
             type: Function,
             required: true
