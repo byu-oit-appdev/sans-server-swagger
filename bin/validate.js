@@ -104,7 +104,7 @@ exports.array = function(value, schema, definitions, depth) {
 
 exports.binary = function(value, schema, definitions, depth) {
     const error = errorGen(value, depth);
-    if (!normalize.rxBinary.test(value) || value.length % 8 !== 0) return error('Expected a binary sequence of octets.');
+    if (!normalize.rxBinary.test(value)) return error('Expected a binary sequence of octets.');
     return generic(value, schema, definitions, depth);
 };
 

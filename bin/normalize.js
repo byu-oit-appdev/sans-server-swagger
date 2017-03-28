@@ -18,7 +18,7 @@
 const is                = require('./is');
 
 exports.rxBase64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
-exports.rxBinary = /^[01]+$/;
+exports.rxBinary = /^(?:[01]{8})+$/;
 exports.rxDate = /^(\d{4})-(\d{2})-(\d{2})$/;
 exports.rxInteger = /^\d+$/;
 exports.rxNumber = /^\d+(?:\.\d+)?$/;
