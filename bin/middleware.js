@@ -19,12 +19,10 @@ const bodyParser        = require('./body-parser');
 const checkSwagger      = require('./check-swagger');
 const deserialize       = require('./deserialize');
 const Enforcer          = require('swagger-enforcer');
-const fs                = require('fs');
-const jsonRefs          = require('json-refs');
 const path              = require('path');
 const schema            = require('./schema');
+const swaggerLoad       = require('./swagger-load');
 const validate          = require('./validate');
-const yaml              = require('js-yaml');
 
 const acceptedMethods = { get: true, post: true, put: true, delete: true, options: true, head: true, patch: true };
 
@@ -32,22 +30,16 @@ module.exports = function (configuration) {
     const config = schema.normalize(configuration);
     const mockQP = config.mockQueryParameter;
     const router = config.router;
-    let ready = false;
-
-    // produce the swagger object
-    const swagger = /\.json$/.test(config.swagger)
-        ? require(config.swagger)
-        : yaml.load(fs.readFileSync(config.swagger, 'utf8'));
-
-    // make sure that there is a basePath that starts with slash
-    if (!swagger.hasOwnProperty('basePath')) swagger.basePath = '/';
-    swagger.basePath = '/' + swagger.basePath.replace(/^\//, '').replace(/\/$/, '');
-    const rxBasepath = new RegExp('^' + (swagger.basePath === '/' ? '' : '\\' + swagger.basePath) + '(?:\\/|\\?|$)');
 
     // resolve swagger json references and process swagger object
-    const promise = jsonRefs.resolveRefs(swagger)
-        .then(data => {
-            const swagger = data.resolved;
+    const promise = swaggerLoad(config.swagger)
+        .then(swagger => {
+
+            // make sure that there is a basePath that starts with slash
+            if (!swagger.hasOwnProperty('basePath')) swagger.basePath = '/';
+            swagger.basePath = '/' + swagger.basePath.replace(/^\//, '').replace(/\/$/, '');
+            const rxBasepath = new RegExp('^' + (swagger.basePath === '/' ? '' : '\\' + swagger.basePath) + '(?:\\/|\\?|$)');
+
             const swagggerErrors = checkSwagger(swagger);
             const swaggerString = JSON.stringify(swagger);
             if (!swagger.definitions) swagger.definitions = {};
@@ -237,7 +229,7 @@ module.exports = function (configuration) {
                 console.error('One or more errors found in the swagger document:\n  ' + swagggerErrors.join('\n  '));
             }
 
-            ready = true;
+            return rxBasepath;
         });
 
     // if the promise doesn't resolve then the server can start but wont respond to requests
@@ -248,19 +240,15 @@ module.exports = function (configuration) {
     // return the middleware function - this essentially makes sure the router is ready before processing router middleware
     return function swaggerRouter(req, res, next) {
         const server = this;
+        promise.then(rxBasepath => {
+            // log an message if not within the base path
+            if (!config.ignoreBasePath && !rxBasepath.test(req.path)) {
+                server.log('path', 'The request path does not fall within the basePath: ' + req.url);
+            }
 
-        function execute() {
+            // execute the router
             router.call(server, req, res, next);
-        }
-
-        // if the path does not match the base path then exit middleware
-        if (!config.ignoreBasePath && !rxBasepath.test(req.path)) {
-            this.log('path', 'The request path does not fall within the basePath: ' + req.url);
-            execute();
-
-        } else {
-            ready ? execute() : promise.then(() => execute());
-        }
+        });
     };
 };
 
