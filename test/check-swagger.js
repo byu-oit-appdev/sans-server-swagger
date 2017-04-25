@@ -17,22 +17,44 @@
 'use strict';
 const expect            = require('chai').expect;
 const check             = require('../bin/check-swagger');
+const load              = require('../bin/swagger-load');
+const path              = require('path');
 
 describe('check swagger', () => {
-    const log = console.log;
-    let capture;
 
-    before(() => {
-        console.log = function() {
-            capture = arguments;
+    it('throws error if $ref unresolved', () => {
+        return load(path.resolve(__dirname, './swagger/refs.yaml'))
+            .then(swagger => {
+                const errors = check(swagger);
+                expect(errors.length).to.equal(1);
+                expect(errors[0]).to.match(/\$ref could not be resolved/);
+            });
+    });
+
+    it('consumes not provided', () => {
+        const swagger = {};
+        expect(() => check(swagger)).not.to.throw(Error);
+    });
+
+    it('does not consume forms but uses form data', () => {
+        const swagger = {
+            consumes: [ 'application/json' ],
+            paths: {
+                '/': {
+                    get: {
+                        parameters: [
+                            {
+                                name: 'foo',
+                                in: 'formData'
+                            }
+                        ]
+                    }
+                }
+            }
         };
+        const errors = check(swagger);
+        expect(errors.length).to.equal(1);
+        expect(errors[0]).to.match(/paths allow formData/);
     });
-
-    after(() => {
-        console.log = log;
-    });
-
-    /*it('can ')*/
-
 
 });
