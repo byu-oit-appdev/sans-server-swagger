@@ -18,9 +18,9 @@
 const bodyParser        = require('./body-parser');
 const checkSwagger      = require('./check-swagger');
 const deserialize       = require('./deserialize');
+const Enforcer          = require('swagger-enforcer');
 const fs                = require('fs');
 const jsonRefs          = require('json-refs');
-const normalize         = require('./normalize');
 const path              = require('path');
 const schema            = require('./schema');
 const validate          = require('./validate');
@@ -50,6 +50,7 @@ module.exports = function (configuration) {
             const swagger = data.resolved;
             const swagggerErrors = checkSwagger(swagger);
             const swaggerString = JSON.stringify(swagger);
+            if (!swagger.definitions) swagger.definitions = {};
 
             // normalize required properties
             transitionRequiredToProperties(swagger);
@@ -59,7 +60,7 @@ module.exports = function (configuration) {
                 loadController(config.controllers, swagger['x-controller'], config.development) :
                 null;
 
-            // if there is a swagger endpoint then define that path
+            // if there is to be a swagger endpoint then define that path
             if (config.endpoint) {
                 router.get(config.ignoreBasePath ? config.endpoint : swagger.basePath + config.endpoint, (req, res) => {
                     res.send(200, swaggerString, { 'Content-Type': 'application/json' });
@@ -84,13 +85,14 @@ module.exports = function (configuration) {
                                 const pathErrors = [];
                                 const methodSchema = pathSchema[method];
 
+                                // if in development mode and there is no "mock" query parameter then create it to allow for valid mocking
                                 if (config.development) {
                                     if (!methodSchema.hasOwnProperty('parameters')) methodSchema.parameters = [];
                                     const hasMockQueryParam = methodSchema.parameters
-                                        .filter(p => p.name === 'mock' && p.in === 'query')[0] !== undefined;
+                                        .filter(p => p.name === mockQP && p.in === 'query')[0] !== undefined;
                                     if (!hasMockQueryParam) {
                                         methodSchema.parameters.push({
-                                            name: 'mock',
+                                            name: mockQP,
                                             in: 'query',
                                             description: 'Produces a mocked response.',
                                             required: false,
@@ -119,8 +121,9 @@ module.exports = function (configuration) {
 
                                         // validate default parameter values
                                         if (p.hasOwnProperty('default')) {
-                                            const err = validate.byType(p.default, p, 0);
-                                            if (err) pathErrors.push('Default value does not pass validation for parameter: ' + p.name);
+                                            Enforcer(p, swagger.definitions, { enforce: true, useDefaults: true })
+                                                .errors()
+                                                .forEach(err => pathErrors.push(err.message));
                                         }
                                     });
                                 }
@@ -135,60 +138,44 @@ module.exports = function (configuration) {
                                         path + '\n    ' + pathErrors.join('\n    '));
                                 }
 
-                                // define the route
+                                // define the request and response validator functions
+                                const validateRequest = validate.request(methodSchema, swagger.definitions);
+                                const validateResponse = validate.response(methodSchema, swagger.definitions);
+
+                                //////////////////////////////
+                                //                          //
+                                //      DEFINE THE ROUTE    //
+                                //                          //
+                                //////////////////////////////
                                 router[method](fullPath, bodyParserMiddleware, function(req, res) {
                                     const server = this;
-                                    let validateResponse = true;
+                                    let responseNeedsValidation = true;
 
                                     // deserialize the request parameters
                                     if (Array.isArray(methodSchema.parameters)) deserialize.request(req, methodSchema.parameters);
 
                                     // validate the request
-                                    const err = validate.request(req, methodSchema, swagger.definitions);
+                                    const err = validateRequest(req);
                                     if (err) {
-                                        validateResponse = false;
+                                        responseNeedsValidation = false;
+                                        server.log('request-error', 'Invalid request.');
                                         res.status(400);
                                         return res.send(err);
                                     }
 
                                     // add a hook to validate the response before send
                                     res.hook(function(state) {
-                                        if (validateResponse && !(state.body instanceof Error)) {
-                                            const responseDefinition = methodSchema.responses &&
-                                                methodSchema.responses[state.statusCode];
-
-                                            const errStr = !responseDefinition
-                                                ? 'Invalid swagger response code: ' + state.statusCode
-                                                : responseDefinition.schema ? validate.response(state.body, responseDefinition.schema, swagger.definitions, 24) : null;
-
-                                            // if there is an error then update the resonse message
-                                            if (errStr) {
+                                        if (responseNeedsValidation && !(state.body instanceof Error)) {
+                                            const err = validateResponse.validate(state.statusCode, state.body);
+                                            if (err) {
                                                 server.log('response-error', 'Invalid response.');
-                                                const err = Error(errStr);
-                                                this.body(err);
+                                                this.body(Error(err));
                                             }
                                         }
                                     });
 
                                     // add a build method to the request object
-                                    res.build = function(code) {
-                                        // TODO: eventually add swagger response here
-
-                                        if (!methodSchema.responses.hasOwnProperty(code)) {
-                                            throw Error('Invalid response code for path: ' + method.toUpperCase() + ' ' + fullPath);
-                                        }
-                                        const responseSchema = methodSchema.responses[code];
-                                        const type = normalize.schemaType(responseSchema);
-                                        server.log('swagger-build', 'Not yet fully implemented.');
-
-                                        if (type === 'object') {
-                                            return {};
-                                        } else if (type === 'array') {
-                                            return {};
-                                        } else {
-                                            return '';
-                                        }
-                                    };
+                                    res.enforce = validateResponse.enforce;
 
                                     // if it should be mocked
                                     if (req.query.hasOwnProperty(mockQP) || (!handler && config.development)) {
@@ -226,7 +213,7 @@ module.exports = function (configuration) {
                                                 res.send(examples[match]);
                                             } else {
                                                 server.log('mock', 'example not implemented');
-                                                validateResponse = false;
+                                                responseNeedsValidation = false;
                                                 res.sendStatus(501);
                                             }
                                         }
@@ -237,7 +224,7 @@ module.exports = function (configuration) {
                                         executeController(server, handler, req, res);
 
                                     } else {
-                                        validateResponse = false;
+                                        responseNeedsValidation = false;
                                         res.sendStatus(501);
                                     }
                                 });
