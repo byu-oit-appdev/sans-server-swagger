@@ -15,152 +15,56 @@
  *    limitations under the License.
  **/
 'use strict';
-const normalize         = require('./normalize');
+const Enforcer          = require('swagger-enforcer');
 
 /**
- * Deserialize request parameters.
- * @param {object} req
- * @param {object[]} parameters
- */
-exports.request = function(req, parameters) {
-    parameters.forEach(param => {
-        const name = param.name;
-        const hasDefault = param.hasOwnProperty('default');
-        switch (param.in) {
-            case 'body':
-                if (typeof req.body === 'undefined' && hasDefault) {
-                    req.body = typeof param.default === 'object'
-                        ? JSON.parse(JSON.stringify(param.default))
-                        : param.default;
-                }
-                if (typeof req.body === 'string') req.body = exports.byType(req.body, param.schema);
-                break;
-            case 'formData':
-                if (typeof req.body === 'object') {
-                    if (req.body.hasOwnProperty(name)) req.body[name] = req.body[name].content;
-                    if (!req.body.hasOwnProperty(name) && hasDefault) req.body[name] = param.default;
-                    if (req.body.hasOwnProperty(name)) req.body[name] = exports.byType(req.body[name], param);
-                }
-                break;
-            case 'header':
-                if (!req.headers.hasOwnProperty(name) && hasDefault) req.headers[name] = param.default;
-                if (req.headers.hasOwnProperty(name)) req.headers[name] = exports.byType(req.headers[name], param);
-                break;
-            case 'path':
-                if (!req.params.hasOwnProperty(name) && hasDefault) req.params[name] = param.default;
-                if (req.params.hasOwnProperty(name)) req.params[name] = exports.byType(req.params[name], param);
-                break;
-            case 'query':
-                if (!req.query.hasOwnProperty(name) && hasDefault) req.query[name] = param.default;
-                if (req.query.hasOwnProperty(name)) req.query[name] = exports.byType(req.query[name], param);
-                break;
-        }
-    });
-};
-
-/**
- * Deserialize a string by type.
+ * Get a buffer from a binary string.
  * @param {string} value
- * @param {object} schema
- * @returns {*}
+ * @returns {Buffer}
  */
-exports.byType = function(value, schema) {
-    const type = normalize.schemaType(schema);
-    switch (type) {
-        case 'array': return exports.array(value, schema);
-        case 'boolean': return exports.boolean(value);
-        case 'file': return value; // TODO implement file deserialization
-        case 'integer': return exports.integer(value, schema);
-        case 'number': return exports.number(value, schema);
-        //case 'object': return exports.object(value, schema);
-        case 'string':
-            switch (schema.format) {
-                case 'binary': return exports.binary(value, schema);
-                case 'byte': return exports.byte(value, schema);
-                case 'date': return exports.date(value, schema);
-                case 'date-time': return exports.dateTime(value, schema);
-                default: return exports.string(value, schema);
-            }
-    }
-};
-
-
-
-
-exports.array = function(value, schema) {
-    const format = schema.hasOwnProperty('collectionFormat') ? schema.collectionFormat : 'csv';
-    const delimiter = format === 'csv' ? ','
-        : format === 'ssv' ? ' '
-        : format === 'tsv' ? '\t'
-        : format === 'pipes' ? '|' : ',';
-    value = value.split(delimiter);
-    if (!schema.items) return value;
-    return value.map(item => {
-        return exports.byType(item, schema.items);
-    });
-};
-
 exports.binary = function(value) {
+    if (typeof value !== 'string' || !Enforcer.is.binary(value)) throw Error('Unable to deserialize as binary a non-binary string value: ' + value);
     const ar = [];
-    for (let i = 0; i < value.length; i += 8) {
-        ar.push(parseInt(value.substr(i, 8), 2));
-    }
+    const length = value.length;
+    for (let i = 0; i < length; i += 8) ar.push(parseInt(value.substr(i, 8), 2));
     return new Buffer(ar, 'binary');
 };
 
-exports.boolean = function(value) {
-    return !(value === 'false' || value === 'null' || value === '0' || value === '');
-};
-
+/**
+ * Get a buffer from a byte string.
+ * @param {string} value
+ * @returns {Buffer}
+ */
 exports.byte = function(value) {
+    if (typeof value !== 'string' || !Enforcer.is.byte(value)) throw Error('Unable to deserialize as byte a non-byte string value: ' + value);
     return new Buffer(value, 'base64');
 };
 
+/**
+ * Get a Date object from a date string.
+ * @param {string} value
+ * @returns {Date}
+ */
 exports.date = function(value) {
-    const match = normalize.rxDate.exec(value);
-    if (!match) return value;
-    const year = +match[1];
-    const month = +match[2] - 1;
-    const day = +match[3];
-    return new Date(year, month, day, 0, 0, 0, 0);
+    if (typeof value !== 'string' || !Enforcer.is.date(value)) throw Error('Unable to deserialize as date a non-date string value: ' + value);
+    return new Date(value + 'T00:00:00.000Z');
 };
 
+/**
+ * Get a Date object from a date-time string.
+ * @param {string} value
+ * @returns {Date}
+ */
 exports.dateTime = function(value) {
-    const match = normalize.rxTime.exec(value);
-    if (!match) return value;
-    const year = +match[1];
-    const month = +match[2] - 1;
-    const day = +match[3];
-    const hour = +match[4];
-    const minute = +match[5];
-    const second = +match[6];
-    const millisecond = +match[7] || 0;
-    return new Date(year, month, day, hour, minute, second, millisecond);
+    if (typeof value !== 'string' || !Enforcer.is.dateTime(value)) throw Error('Unable to deserialize as date-time a non-date-time string value: ' + value);
+    return new Date(value);
 };
 
-exports.integer = function(value) {
-    const int = parseInt(value);
-    return isNaN(int) ? value : int;
-};
-
-exports.number = function(value) {
-    const num = parseFloat(value);
-    return isNaN(value) ? value : num;
-};
-
-/*exports.object = function(value, schema) {
-    try {
-        value = JSON.parse(value);
-    } catch (e) {
-        value = null;
-    }
-    if (!schema.schema || !value || typeof value !== 'object') return value;
-    Object.keys(value).forEach(key => {
-        value[key] = exports.byType(value[key], schema.schema);
-    });
-    return value;
-};*/
-
-exports.string = function(value) {
-    return value;
-};
+/**
+ * Get a buffer from a byte string.
+ * @alias {#byte}
+ * @type {Function}
+ * @param {string} value
+ * @returns {Buffer}
+ */
+exports.file = exports.byte;
