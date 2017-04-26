@@ -32,14 +32,8 @@ exports.request = function(req, parameters) {
                     req.body = typeof param.default === 'object'
                         ? JSON.parse(JSON.stringify(param.default))
                         : param.default;
-                } else if (typeof req.body === 'string' && param.schema && typeof param.schema === 'object') {
-                    const type = normalize.schemaType(param.schema);
-                    if (type === 'array' || type === 'object') {
-                        req.body = JSON.parse(req.body);
-                    } else {
-                        req.body = exports.byType(req.body, param.schema);
-                    }
                 }
+                if (typeof req.body === 'string') req.body = exports.byType(req.body, param.schema);
                 break;
             case 'formData':
                 if (typeof req.body === 'object') {

@@ -175,18 +175,6 @@ describe('deserialize', () => {
                 };
             });
 
-            it('can be an array', () => {
-                params[0].schema = {
-                    type: 'array',
-                    items: {
-                        type: 'number'
-                    }
-                };
-                req.body = JSON.stringify([1,2,3]);
-                deserialize.request(req, params);
-                expect(req.body).to.deep.equal([1,2,3]);
-            });
-
             it('can be a boolean', () => {
                 params[0].schema.type = 'boolean';
                 req.body = 'false';
@@ -247,14 +235,6 @@ describe('deserialize', () => {
                     expect(+req.body).to.equal(+d);
                 });
 
-            });
-
-            it('can be an object', () => {
-                const o = { foo: 'bar' };
-                params[0].schema.type = 'object';
-                req.body = JSON.stringify(o);
-                deserialize.request(req, params);
-                expect(req.body).to.deep.equal(o);
             });
 
         });
