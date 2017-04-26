@@ -15,69 +15,110 @@
  *    limitations under the License.
  **/
 'use strict';
-const is                = require('./is');
 
-exports.rxBase64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
-exports.rxBinary = /^(?:[01]{8})+$/;
-exports.rxDate = /^(\d{4})-(\d{2})-(\d{2})$/;
-exports.rxInteger = /^\d+$/;
-exports.rxNumber = /^\d+(?:\.\d+)?$/;
-exports.rxTime = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?Z$/;
+const rxInteger = /^\d+$/;
+const rxNumber = /^\d+(?:\.\d+)?$/;
 
-exports.toDate = function(value) {
-    if (value instanceof Date) return value;
-    if (typeof value === 'string') {
-        const match = exports.rxDate.exec(value) || exports.rxTime.exec(value);
-        if (!match) throw Error('Invalid date or date-time string. Expected format "YYYY-MM-DD" or "YYYY-MM-DD HH:mm:SS".');
-        return new Date(+match[1], +match[2] - 1, +match[3], +match[4] || 0, +match[5] || 0, +match[6] || 0);
-    }
-    return new Date(+value);
-};
+exports.requestParameters = function (req, parameters) {
+    parameters.forEach(param => {
+        const name = param.name;
+        const hasDefault = param.hasOwnProperty('default');
 
-exports.startOfDay = function(value) {
-    if (!is.dateObject(value)) throw Error('Expected a date object. Received: ' + value);
-    const date = new Date(+value);
-    date.setHours(0);
-    date.setMinutes(0);
-    date.setSeconds(0);
-    return date;
-};
+        switch (param.in) {
+            case 'body':
+                const bodyHasDefault = param.schema && param.schema.hasOwnProperty('default');
+                if (typeof req.body === 'undefined' && bodyHasDefault) {
+                    req.body = typeof param.schema.default === 'object'
+                        ? JSON.parse(JSON.stringify(param.schema.default))
+                        : param.schema.default;
+                }
+                req.body = deserializeParameter(req.body, param.schema, false);
+                break;
 
-exports.dateToString = function(value) {
-    if (!is.dateObject(value)) throw Error('Expected a date object. Received: ' + value);
+            case 'formData':
+                if (!req.body && hasDefault) {
+                    req.body = {};
+                    req.body[name] = [{ headers: {}, content: param.default }];
+                }
+                if (req.body && typeof req.body === 'object' && req.body.hasOwnProperty(name)) {
+                    if (Array.isArray(req.body[name])) {
+                        let value = req.body[name];
+                        const schemaType = exports.schemaType(param);
 
-    let month = value.getMonth() + 1;
-    if (month < 10) month = '0' + month;
-    let day = value.getDay();
-    if (day < 10) day = '0' + day;
-    let hour = value.getDay();
-    if (hour < 10) hour = '0' + hour;
-    let minute = value.getDay();
-    if (minute < 10) minute = '0' + minute;
-    let second = value.getDay();
-    if (second < 10) second = '0' + second;
+                        if (schemaType === 'array' && param.collectionFormat === 'multi') {
+                            value = value.map(item => {
+                                const content = !item.content && hasDefault ? param.default : item.content;
+                                return {
+                                    headers: item.headers,
+                                    content: deserializeParameter(content, param.items, true)
+                                };
+                            });
 
-    return value.getFullYear() + '-' + month + '-' + day + ' ' + hour + ':' + minute + ':' + second;
-};
+                        } else {
+                            const item = value.pop();
+                            const content = !item.content && hasDefault ? param.default : item.content;
+                            value = {
+                                headers: item.headers,
+                                content: deserializeParameter(content, param, true)
+                            };
+                        }
 
-exports.partialObject = function(object, properties) {
-    if (object && typeof object === 'object') {
-        const result = {};
-        properties.forEach(key => {
-            if (object.hasOwnProperty(key)) result[key] = object[key];
-        });
-        return result;
-    } else {
-        return object;
-    }
+                        req.body[name] = value;
+
+                    } else {
+                        delete req.body[name];
+                    }
+                }
+                break;
+
+            case 'header':
+                if (!req.headers && hasDefault) {
+                    req.headers = {};
+                    req.headers[name] = param.default;
+                }
+                if (req.headers && typeof req.headers === 'object') {
+                    if (!req.headers.hasOwnProperty(name) && hasDefault) req.headers[name] = param.default;
+                    if (req.headers.hasOwnProperty(name)) req.headers[name] = deserializeParameter(req.headers[name], param, false);
+                }
+                break;
+
+            case 'path':
+                if (req.params && typeof req.params === 'object' && req.params.hasOwnProperty(name)) {
+                    req.params[name] = deserializeParameter(req.params[name], param, false);
+                }
+                break;
+
+            case 'query':
+                if (!req.query && hasDefault) {
+                    req.query = {};
+                    req.query[name] = param.default;
+                }
+                if (req.query) {
+                    if (!req.query.hasOwnProperty(name) && hasDefault) req.query[name] = param.default;
+                    if (req.query.hasOwnProperty(name)) {
+                        const schemaType = exports.schemaType(param);
+                        let value = req.query[name];
+
+                        if (schemaType === 'array' && param.collectionFormat === 'multi') {
+                            if (!Array.isArray(value)) value = [value];
+                            req.query[name] = value.map(item => deserializeParameter(item, param.items, true));
+
+                        } else {
+                            if (Array.isArray(value)) value = value.pop();
+                            req.query[name] = deserializeParameter(value, param, true);
+                        }
+                    }
+                }
+                break;
+        }
+    });
 };
 
 exports.schemaType = function(schema) {
-    let type = null;
-    if (schema.hasOwnProperty('schema')) schema = schema.schema;
+    let type;
     if (schema.hasOwnProperty('type')) {
         type = schema.type;
-    } else if (schema.hasOwnProperty('properties') || schema.hasOwnProperty('allOf')) {
+    } else if (schema.hasOwnProperty('properties') || schema.hasOwnProperty('allOf') || schema.hasOwnProperty('additionalProperties')) {
         type = 'object';
     } else if (schema.hasOwnProperty('items')) {
         type = 'array';
@@ -96,3 +137,35 @@ exports.schemaType = function(schema) {
             return 'string';
     }
 };
+
+
+
+function deserializeParameter(value, schema) {
+    if (!schema) return value;
+
+    const type = exports.schemaType(schema);
+    if (type === 'array') {
+        const format = schema.hasOwnProperty('collectionFormat') ? schema.collectionFormat : 'csv';
+        const delimiter = format === 'csv' ? ','
+            : format === 'ssv' ? ' '
+                : format === 'tsv' ? '\t'
+                    : format === 'pipes' ? '|' : ',';
+        value = value.split(delimiter);
+        if (!schema.items) return value;
+        return value.map(item => {
+            return deserializeParameter(item, schema.items);
+        });
+
+    } else if (type === 'boolean') {
+        return !(value === 'false' || value === 'null' || value === '0' || value === '');
+
+    } else if (type === 'integer' && rxInteger.test(value)) {
+        return parseInt(value);
+
+    } else if (type === 'number' && rxNumber.test(value)) {
+        return parseFloat(value);
+
+    } else {
+        return value;
+    }
+}
