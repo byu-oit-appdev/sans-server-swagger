@@ -18,6 +18,7 @@
 const checkSwagger      = require('./check-swagger');
 const deserialize       = require('./deserialize');
 const Enforcer          = require('swagger-enforcer');
+const normalize         = require('./normalize');
 const path              = require('path');
 const schema            = require('./schema');
 const swaggerLoad       = require('./swagger-load');
@@ -140,7 +141,7 @@ module.exports = function (configuration) {
                                     let responseNeedsValidation = true;
 
                                     // deserialize the request parameters
-                                    if (Array.isArray(methodSchema.parameters)) deserialize.request(req, methodSchema.parameters);
+                                    if (Array.isArray(methodSchema.parameters)) normalize.requestParameters(req, methodSchema.parameters);
 
                                     // validate the request
                                     const err = validateRequest(req);
@@ -150,6 +151,9 @@ module.exports = function (configuration) {
                                         res.status(400);
                                         return res.send(err);
                                     }
+
+                                    // add the deserialize object to the request
+                                    req.deserialize = deserialize;
 
                                     // add a hook to validate the response before send
                                     res.hook(function(state) {
@@ -264,6 +268,25 @@ function executeController(server, controller, req, res) {
 }
 
 /**
+ * Look through swagger examples and find a match based on the accept content type
+ * @param {object} examples
+ * @param {string} accept
+ * @returns {*}
+ */
+function findMatchingExample(examples, accept) {
+    const keys = examples ? Object.keys(examples) : [];
+    if (keys.length === 0) return undefined;
+    if (accept === '*') return keys[0];
+
+    const parts = accept.split('/');
+    const match = keys.filter(k => {
+        const ar = k.split('/');
+        return (parts[0] === '*' || parts[0] === ar[0]) && (parts[1] === '*' || parts[1] === ar[1]);
+    });
+    return match[0];
+}
+
+/**
  * Attempt to load a node module as a controller.
  * @param {string} controllersDirectory
  * @param {string} controller
@@ -282,25 +305,6 @@ function loadController(controllersDirectory, controller, development) {
             throw e;
         }
     }
-}
-
-/**
- * Look through swagger examples and find a match based on the accept content type
- * @param {object} examples
- * @param {string} accept
- * @returns {*}
- */
-function findMatchingExample(examples, accept) {
-    const keys = examples ? Object.keys(examples) : [];
-    if (keys.length === 0) return undefined;
-    if (accept === '*') return keys[0];
-
-    const parts = accept.split('/');
-    const match = keys.filter(k => {
-        const ar = k.split('/');
-        return (parts[0] === '*' || parts[0] === ar[0]) && (parts[1] === '*' || parts[1] === ar[1]);
-    });
-    return match[0];
 }
 
 /**
