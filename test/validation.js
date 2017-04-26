@@ -142,7 +142,7 @@ describe('validation', () => {
         afterEach(() => console.log('\n'));
 
         it('valid with required body', () => {
-            return api.request({ method: 'POST', path: '/v1/input-validation', body: JSON.stringify({ id: 123, name: 'Fido', tag: 'Dog' }) })
+            return api.request({ method: 'POST', path: '/v1/input-validation', body: { id: 123, name: 'Fido', tag: 'Dog' } })
                 .then(res => {
                     expect(res.statusCode).to.equal(200);
                 });
@@ -156,21 +156,21 @@ describe('validation', () => {
         });
 
         it('invalid with invalid body', () => {
-            return api.request({ method: 'POST', path: '/v1/input-validation', body: JSON.stringify({ id: '123', name: 'Fido', tag: 'Dog' }) })
+            return api.request({ method: 'POST', path: '/v1/input-validation', body: { id: '123', name: 'Fido', tag: 'Dog' } })
                 .then(res => {
                     expect(res.statusCode).to.equal(400);
                 });
         });
 
         it('mode matches enum', () => {
-            return api.request({ method: 'POST', path: '/v1/input-validation?mode=one', body: JSON.stringify({ id: 123, name: 'Fido', tag: 'Dog' }) })
+            return api.request({ method: 'POST', path: '/v1/input-validation?mode=one', body: { id: 123, name: 'Fido', tag: 'Dog' } })
                 .then(res => {
                     expect(res.statusCode).to.equal(200);
                 });
         });
 
         it('mode does not match enum', () => {
-            return api.request({ method: 'POST', path: '/v1/input-validation?mode=foo', body: JSON.stringify({ id: 123, name: 'Fido', tag: 'Dog' }) })
+            return api.request({ method: 'POST', path: '/v1/input-validation?mode=foo', body: { id: 123, name: 'Fido', tag: 'Dog' } })
                 .then(res => {
                     expect(res.statusCode).to.equal(400);
                 });
