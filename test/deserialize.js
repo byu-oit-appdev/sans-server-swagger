@@ -20,55 +20,7 @@ const expect            = require('chai').expect;
 
 describe('deserialize', () => {
 
-    describe('can deserialize an array', () => {
-
-        it('from default (csv)', () => {
-            const str = '1,2,3';
-            const schema = {
-                items: { type: 'number' }
-            };
-            expect(deserialize.array(str, schema)).to.deep.equal([1, 2, 3]);
-        });
-
-        it('from csv', () => {
-            const str = '1,2,3';
-            const schema = {
-                items: { type: 'number' },
-                collectionFormat: 'csv'
-            };
-            expect(deserialize.array(str, schema)).to.deep.equal([1, 2, 3]);
-        });
-
-        it('from ssv', () => {
-            const str = '1 2 3';
-            const schema = {
-                items: { type: 'number' },
-                collectionFormat: 'ssv'
-            };
-            expect(deserialize.array(str, schema)).to.deep.equal([1, 2, 3]);
-        });
-
-        it('from tsv', () => {
-            const str = '1\t2\t3';
-            const schema = {
-                items: { type: 'number' },
-                collectionFormat: 'tsv'
-            };
-            expect(deserialize.array(str, schema)).to.deep.equal([1, 2, 3]);
-        });
-
-        it('from pipes (|)', () => {
-            const str = '1|2|3';
-            const schema = {
-                items: { type: 'number' },
-                collectionFormat: 'pipes'
-            };
-            expect(deserialize.array(str, schema)).to.deep.equal([1, 2, 3]);
-        });
-
-    });
-
-    describe('can deserialize binary', () => {
+    describe('binary', () => {
         let v;
 
         before(() => v = deserialize.binary('0110100001100101011011000110110001101111'));
@@ -83,7 +35,7 @@ describe('deserialize', () => {
 
     });
 
-    describe('can deserialize boolean', () => {
+    describe('boolean', () => {
 
         it('"true" is true', () => {
             expect(deserialize.boolean('true')).to.be.true;
@@ -115,7 +67,7 @@ describe('deserialize', () => {
 
     });
 
-    describe('can deserialize byte', () => {
+    describe('byte', () => {
 
         let v;
 
@@ -131,27 +83,39 @@ describe('deserialize', () => {
 
     });
 
-    it('can deserialize a date', () => {
-        const d1 = deserialize.date('2000-01-01');
-        const d2 = new Date(2000, 0, 1);
-        expect(+d1).to.equal(+d2);
+    describe('date', () => {
+
+        it('valid', () => {
+            const d1 = deserialize.date('2000-01-01');
+            const d2 = new Date('2000-01-01T00:00:00.000Z');
+            expect(+d1).to.equal(+d2);
+        });
+
+        it('not date', () => {
+            const d1 = deserialize.date('2000-01-01');
+            const d2 = new Date('2000-01-01T00:00:00.000Z');
+            expect(+d1).to.equal(+d2);
+        });
+
     });
 
-    it('can deserialize a date-time', () => {
+
+
+    it('date-time', () => {
         const d1 = deserialize.dateTime('2000-01-01T15:05:18.123Z');
-        const d2 = new Date(2000, 0, 1, 15, 5, 18, 123);
+        const d2 = new Date('2000-01-01T15:05:18.123Z');
         expect(+d1).to.equal(+d2);
     });
 
-    it('can deserialize an integer', () => {
+    it('integer', () => {
         expect(deserialize.integer('15')).to.equal(15);
     });
 
-    it('can deserialize a number', () => {
+    it('number', () => {
         expect(deserialize.number('15.1')).to.equal(15.1);
     });
 
-    it('can deserialize a string', () => {
+    it('string', () => {
         expect(deserialize.string('foo')).to.equal('foo');
     });
 
@@ -220,7 +184,7 @@ describe('deserialize', () => {
                 });
 
                 it('date', () => {
-                    const d = new Date(2000, 0, 1);
+                    const d = new Date('2000-01-01T00:00:00.000Z');
                     params[0].schema.format = 'date';
                     req.body = '2000-01-01';
                     deserialize.request(req, params);
@@ -228,7 +192,7 @@ describe('deserialize', () => {
                 });
 
                 it('date-time', () => {
-                    const d = new Date(2000, 0, 1, 15, 5, 18, 123);
+                    const d = new Date('2000-01-01T15:05:18.123Z');
                     params[0].schema.format = 'date-time';
                     req.body = '2000-01-01T15:05:18.123Z';
                     deserialize.request(req, params);
@@ -317,7 +281,7 @@ function runParamTests(inValue, req, property) {
             });
 
             it('date', () => {
-                const d = new Date(2000, 0, 1);
+                const d = new Date('2000-01-01T00:00:00.000Z');
                 params[0].format = 'date';
                 req[property].myParam = '2000-01-01';
                 deserialize.request(req, params);
@@ -325,7 +289,7 @@ function runParamTests(inValue, req, property) {
             });
 
             it('date-time', () => {
-                const d = new Date(2000, 0, 1, 15, 5, 18, 123);
+                const d = new Date('2000-01-01T15:05:18.123Z');
                 params[0].format = 'date-time';
                 req[property].myParam = '2000-01-01T15:05:18.123Z';
                 deserialize.request(req, params);
