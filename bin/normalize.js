@@ -19,6 +19,11 @@
 const rxInteger = /^\d+$/;
 const rxNumber = /^\d+(?:\.\d+)?$/;
 
+/**
+ * Normalize and deserialize the request parameters.
+ * @param {Request} req
+ * @param {Object} parameters
+ */
 exports.requestParameters = function (req, parameters) {
     parameters.forEach(param => {
         const name = param.name;
@@ -114,6 +119,11 @@ exports.requestParameters = function (req, parameters) {
     });
 };
 
+/**
+ * Detect the schema type.
+ * @param {Object} schema
+ * @returns {string,undefined}
+ */
 exports.schemaType = function(schema) {
     let type;
     if (schema.hasOwnProperty('type')) {
@@ -133,8 +143,6 @@ exports.schemaType = function(schema) {
         case 'object':
         case 'string':
             return type;
-        default:
-            return 'string';
     }
 };
 
