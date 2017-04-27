@@ -19,6 +19,11 @@ const fs                = require('fs');
 const jsonRefs          = require('json-refs');
 const yaml              = require('js-yaml');
 
+/**
+ * Load the swagger file and resolve all references.
+ * @param {string} swaggerFilePath
+ * @returns {Promise<Object>}
+ */
 module.exports = function(swaggerFilePath) {
     const swagger = /\.json$/.test(swaggerFilePath)
         ? require(swaggerFilePath)
