@@ -138,25 +138,17 @@ describe('normalize', () => {
                         in: 'header',
                         type: 'string',
                         default: 'abc'
-                    }
-                ];
-                const req = {};
-                normalize.requestParameters(req, parameters);
-                expect(req).to.deep.equal({ headers: { 'x-foo': 'abc' } });
-            });
-
-            it('can use default 2', () => {
-                const parameters = [
+                    },
                     {
-                        name: 'x-foo',
+                        name: 'x-bar',
                         in: 'header',
                         type: 'string',
-                        default: 'abc'
+                        default: 'def'
                     }
                 ];
                 const req = { headers: {} };
                 normalize.requestParameters(req, parameters);
-                expect(req).to.deep.equal({ headers: { 'x-foo': 'abc' } });
+                expect(req).to.deep.equal({ headers: { 'x-foo': 'abc', 'x-bar': 'def' } });
             });
 
             it('can deserialize array', () => {
@@ -232,65 +224,157 @@ describe('normalize', () => {
 
         });
 
-        describe.only('query', () => {
+        describe('query', () => {
+
+            it('can use default', () => {
+                const parameters = [
+                    {
+                        name: 'foo',
+                        in: 'query',
+                        type: 'number',
+                        default: 0
+                    },
+                    {
+                        name: 'bar',
+                        in: 'query',
+                        type: 'number',
+                        default: 10
+                    }
+                ];
+                const req = {};
+                normalize.requestParameters(req, parameters);
+                expect(req).to.deep.equal({ query: { foo: 0, bar: 10 } });
+            });
+
+            it('can deserialize', () => {
+                const parameters = [
+                    {
+                        name: 'foo',
+                        in: 'query',
+                        type: 'number',
+                        default: 0
+                    }
+                ];
+                const req = { query: { foo: '123' }};
+                normalize.requestParameters(req, parameters);
+                expect(req).to.deep.equal({ query: { foo: 123 } });
+            });
+
+            it('can deserialize multi', () => {
+                const parameters = [
+                    {
+                        name: 'foo',
+                        in: 'query',
+                        type: 'array',
+                        collectionFormat: 'multi',
+                        items: { type: 'number' }
+                    }
+                ];
+                const req = {
+                    query: {
+                        foo: [ '123', '456' ]
+                    }
+                };
+                normalize.requestParameters(req, parameters);
+                expect(req).to.deep.equal({ query: { foo: [123, 456] } });
+            });
+
+            it('can deserialize csv', () => {
+                const parameters = [
+                    {
+                        name: 'foo',
+                        in: 'query',
+                        type: 'array',
+                        collectionFormat: 'csv',
+                        items: { type: 'number' }
+                    }
+                ];
+                const req = {
+                    query: {
+                        foo: '123,456'
+                    }
+                };
+                normalize.requestParameters(req, parameters);
+                expect(req).to.deep.equal({ query: { foo: [123, 456] } });
+            });
+
+            it('can deserialize ssv', () => {
+                const parameters = [
+                    {
+                        name: 'foo',
+                        in: 'query',
+                        type: 'array',
+                        collectionFormat: 'ssv',
+                        items: { type: 'number' }
+                    }
+                ];
+                const req = {
+                    query: {
+                        foo: '123 456'
+                    }
+                };
+                normalize.requestParameters(req, parameters);
+                expect(req).to.deep.equal({ query: { foo: [123, 456] } });
+            });
+
+            it('can deserialize tsv', () => {
+                const parameters = [
+                    {
+                        name: 'foo',
+                        in: 'query',
+                        type: 'array',
+                        collectionFormat: 'tsv',
+                        items: { type: 'number' }
+                    }
+                ];
+                const req = {
+                    query: {
+                        foo: '123\t456'
+                    }
+                };
+                normalize.requestParameters(req, parameters);
+                expect(req).to.deep.equal({ query: { foo: [123, 456] } });
+            });
+
+            it('can deserialize pipes', () => {
+                const parameters = [
+                    {
+                        name: 'foo',
+                        in: 'query',
+                        type: 'array',
+                        collectionFormat: 'pipes',
+                        items: { type: 'number' }
+                    }
+                ];
+                const req = {
+                    query: {
+                        foo: '123|456'
+                    }
+                };
+                normalize.requestParameters(req, parameters);
+                expect(req).to.deep.equal({ query: { foo: [123, 456] } });
+            });
+
+            it('can deserialize array with invalid collectionFormat as csv', () => {
+                const parameters = [
+                    {
+                        name: 'foo',
+                        in: 'query',
+                        type: 'array',
+                        collectionFormat: 'abcdefg',
+                        items: { type: 'number' }
+                    }
+                ];
+                const req = {
+                    query: {
+                        foo: '123,456'
+                    }
+                };
+                normalize.requestParameters(req, parameters);
+                expect(req).to.deep.equal({ query: { foo: [123, 456] } });
+            });
 
         });
-
-        /*describe('array collection', () => {
-
-            it('from default (csv)', () => {
-                const str = '1,2,3';
-                const schema = {
-                    items: { type: 'number' }
-                };
-                expect(deserialize.array(str, schema)).to.deep.equal([1, 2, 3]);
-            });
-
-            it('from csv', () => {
-                const str = '1,2,3';
-                const schema = {
-                    items: { type: 'number' },
-                    collectionFormat: 'csv'
-                };
-                expect(deserialize.array(str, schema)).to.deep.equal([1, 2, 3]);
-            });
-
-            it('from ssv', () => {
-                const str = '1 2 3';
-                const schema = {
-                    items: { type: 'number' },
-                    collectionFormat: 'ssv'
-                };
-                expect(deserialize.array(str, schema)).to.deep.equal([1, 2, 3]);
-            });
-
-            it('from tsv', () => {
-                const str = '1\t2\t3';
-                const schema = {
-                    items: { type: 'number' },
-                    collectionFormat: 'tsv'
-                };
-                expect(deserialize.array(str, schema)).to.deep.equal([1, 2, 3]);
-            });
-
-            it('from pipes (|)', () => {
-                const str = '1|2|3';
-                const schema = {
-                    items: { type: 'number' },
-                    collectionFormat: 'pipes'
-                };
-                expect(deserialize.array(str, schema)).to.deep.equal([1, 2, 3]);
-            });
-
-            it('no items definition', () => {
-                const str = '1,2,3';
-                const schema = {
-                    collectionFormat: 'dne'
-                };
-                expect(deserialize.array(str, schema)).to.deep.equal(['1', '2', '3']);
-            });
-
-        });*/
 
     });
 
