@@ -15,6 +15,7 @@
  *    limitations under the License.
  **/
 'use strict';
+const acceptedMethods   = require('./accept-methods');
 const checkSwagger      = require('./check-swagger');
 const deserialize       = require('./deserialize');
 const Enforcer          = require('swagger-enforcer');
@@ -23,8 +24,6 @@ const path              = require('path');
 const schema            = require('./schema');
 const swaggerLoad       = require('./swagger-load');
 const validate          = require('./validate');
-
-const acceptedMethods = { get: true, post: true, put: true, delete: true, options: true, head: true, patch: true };
 
 module.exports = function (configuration) {
     const config = schema.normalize(configuration);
