@@ -18,7 +18,7 @@
 const checkSwagger      = require('./check-swagger');
 const deserialize       = require('./deserialize');
 const Enforcer          = require('swagger-enforcer');
-const normalize         = require('./normalize');
+const normalizeRequest  = require('./normalize-request');
 const path              = require('path');
 const schema            = require('./schema');
 const swaggerLoad       = require('./swagger-load');
@@ -141,7 +141,7 @@ module.exports = function (configuration) {
                                     let responseNeedsValidation = true;
 
                                     // deserialize the request parameters
-                                    if (Array.isArray(methodSchema.parameters)) normalize.requestParameters(req, methodSchema.parameters);
+                                    if (Array.isArray(methodSchema.parameters)) normalizeRequest(server, req, methodSchema.parameters);
 
                                     // validate the request
                                     const err = validateRequest(req);

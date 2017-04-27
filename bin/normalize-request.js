@@ -21,10 +21,11 @@ const rxNumber = /^\d+(?:\.\d+)?$/;
 
 /**
  * Normalize and deserialize the request parameters.
+ * @param {SansServer} server
  * @param {Request} req
  * @param {Object} parameters
  */
-exports.requestParameters = function (req, parameters) {
+module.exports = function (server, req, parameters) {
     parameters.forEach(param => {
         const name = param.name;
         const hasDefault = param.hasOwnProperty('default');
@@ -36,35 +37,42 @@ exports.requestParameters = function (req, parameters) {
                     req.body = typeof param.schema.default === 'object'
                         ? JSON.parse(JSON.stringify(param.schema.default))
                         : param.schema.default;
+                    server.log('req-params', 'Using default value for parameter ' + name);
                 }
-                req.body = deserializeParameter(req.body, param.schema, false);
+                req.body = deserializeParameter(server, name, req.body, param.schema);
                 break;
 
             case 'formData':
                 if (!req.body && hasDefault) {
                     req.body = {};
                     req.body[name] = [{ headers: {}, content: param.default }];
+                    server.log('req-params', 'Using default value for parameter ' + name);
                 }
                 if (req.body && typeof req.body === 'object' && req.body.hasOwnProperty(name)) {
                     if (Array.isArray(req.body[name])) {
                         let value = req.body[name];
-                        const schemaType = exports.schemaType(param);
+                        const type = schemaType(param);
+                        if (!type) server.log('req-params', 'Indeterminate schema type for parameter ' + name, param);
 
-                        if (schemaType === 'array' && param.collectionFormat === 'multi') {
-                            value = value.map(item => {
-                                const content = !item.content && hasDefault ? param.default : item.content;
+                        if (type === 'array' && param.collectionFormat === 'multi') {
+                            value = value.map((item, index) => {
+                                const useDefault = !item.content && hasDefault;
+                                const content = useDefault ? param.default : item.content;
+                                if (useDefault) server.log('req-params', 'Using default value for parameter ' + name + ' at index ' + index);
                                 return {
                                     headers: item.headers,
-                                    content: deserializeParameter(content, param.items, true)
+                                    content: deserializeParameter(server, name, content, param.items)
                                 };
                             });
 
                         } else {
                             const item = value.pop();
-                            const content = !item.content && hasDefault ? param.default : item.content;
+                            const useDefault = !item.content && hasDefault;
+                            const content = useDefault ? param.default : item.content;
+                            if (useDefault) server.log('req-params', 'Using default value for parameter ' + name);
                             value = {
                                 headers: item.headers,
-                                content: deserializeParameter(content, param, true)
+                                content: deserializeParameter(server, name, content, param)
                             };
                         }
 
@@ -72,6 +80,7 @@ exports.requestParameters = function (req, parameters) {
 
                     } else {
                         delete req.body[name];
+                        server.log('req-params', 'Form data parameter ignored due to invalid form data format for parameter ' + name);
                     }
                 }
                 break;
@@ -80,16 +89,20 @@ exports.requestParameters = function (req, parameters) {
                 if (!req.headers && hasDefault) {
                     req.headers = {};
                     req.headers[name] = param.default;
+                    server.log('req-params', 'Using default value for parameter ' + name);
                 }
                 if (req.headers && typeof req.headers === 'object') {
-                    if (!req.headers.hasOwnProperty(name) && hasDefault) req.headers[name] = param.default;
-                    if (req.headers.hasOwnProperty(name)) req.headers[name] = deserializeParameter(req.headers[name], param, false);
+                    if (!req.headers.hasOwnProperty(name) && hasDefault) {
+                        req.headers[name] = param.default;
+                        server.log('req-params', 'Using default value for parameter ' + name);
+                    }
+                    if (req.headers.hasOwnProperty(name)) req.headers[name] = deserializeParameter(server, name, req.headers[name], param);
                 }
                 break;
 
             case 'path':
                 if (req.params && typeof req.params === 'object' && req.params.hasOwnProperty(name)) {
-                    req.params[name] = deserializeParameter(req.params[name], param, false);
+                    req.params[name] = deserializeParameter(server, name, req.params[name], param);
                 }
                 break;
 
@@ -97,20 +110,26 @@ exports.requestParameters = function (req, parameters) {
                 if (!req.query && hasDefault) {
                     req.query = {};
                     req.query[name] = param.default;
+                    server.log('req-params', 'Using default value for parameter ' + name);
                 }
                 if (req.query) {
-                    if (!req.query.hasOwnProperty(name) && hasDefault) req.query[name] = param.default;
+                    if (!req.query.hasOwnProperty(name) && hasDefault) {
+                        req.query[name] = param.default;
+                        server.log('req-params', 'Using default value for parameter ' + name);
+                    }
                     if (req.query.hasOwnProperty(name)) {
-                        const schemaType = exports.schemaType(param);
+                        const type = schemaType(param);
+                        if (!type) server.log('req-params', 'Indeterminate schema type for parameter ' + name, param);
+
                         let value = req.query[name];
 
-                        if (schemaType === 'array' && param.collectionFormat === 'multi') {
+                        if (type === 'array' && param.collectionFormat === 'multi') {
                             if (!Array.isArray(value)) value = [value];
-                            req.query[name] = value.map(item => deserializeParameter(item, param.items, true));
+                            req.query[name] = value.map(item => deserializeParameter(server, name, item, param.items));
 
                         } else {
                             if (Array.isArray(value)) value = value.pop();
-                            req.query[name] = deserializeParameter(value, param, true);
+                            req.query[name] = deserializeParameter(server, name, value, param);
                         }
                     }
                 }
@@ -119,12 +138,53 @@ exports.requestParameters = function (req, parameters) {
     });
 };
 
+
+/**
+ * Deserialize a single parameter.
+ * @param {SansServer} server
+ * @param {string} name
+ * @param {*} value
+ * @param {*} schema
+ * @returns {*}
+ */
+function deserializeParameter(server, name, value, schema) {
+    if (!schema) return value;
+
+    const type = schemaType(schema);
+    if (!type) server.log('req-params', 'Indeterminate schema type for parameter ' + name, schema);
+
+    if (type === 'array') {
+        const format = schema.hasOwnProperty('collectionFormat') ? schema.collectionFormat : 'csv';
+        const delimiter = format === 'csv' ? ','
+            : format === 'ssv' ? ' '
+                : format === 'tsv' ? '\t'
+                    : format === 'pipes' ? '|' : ',';
+        value = value.split(delimiter);
+        if (!schema.items) return value;
+        return value.map(item => {
+            return deserializeParameter(server, 'items for ' + name, item, schema.items);
+        });
+
+    } else if (type === 'boolean') {
+        return !(value === 'false' || value === 'null' || value === '0' || value === '');
+
+    } else if (type === 'integer' && rxInteger.test(value)) {
+        return parseInt(value);
+
+    } else if (type === 'number' && rxNumber.test(value)) {
+        return parseFloat(value);
+
+    } else {
+        return value;
+    }
+}
+
 /**
  * Detect the schema type.
  * @param {Object} schema
  * @returns {string,undefined}
  */
-exports.schemaType = function(schema) {
+function schemaType(schema) {
     let type;
     if (schema.hasOwnProperty('type')) {
         type = schema.type;
@@ -143,37 +203,5 @@ exports.schemaType = function(schema) {
         case 'object':
         case 'string':
             return type;
-    }
-};
-
-
-
-function deserializeParameter(value, schema) {
-    if (!schema) return value;
-
-    const type = exports.schemaType(schema);
-    if (type === 'array') {
-        const format = schema.hasOwnProperty('collectionFormat') ? schema.collectionFormat : 'csv';
-        const delimiter = format === 'csv' ? ','
-            : format === 'ssv' ? ' '
-                : format === 'tsv' ? '\t'
-                    : format === 'pipes' ? '|' : ',';
-        value = value.split(delimiter);
-        if (!schema.items) return value;
-        return value.map(item => {
-            return deserializeParameter(item, schema.items);
-        });
-
-    } else if (type === 'boolean') {
-        return !(value === 'false' || value === 'null' || value === '0' || value === '');
-
-    } else if (type === 'integer' && rxInteger.test(value)) {
-        return parseInt(value);
-
-    } else if (type === 'number' && rxNumber.test(value)) {
-        return parseFloat(value);
-
-    } else {
-        return value;
     }
 }

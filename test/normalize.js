@@ -16,9 +16,10 @@
  **/
 'use strict';
 const expect            = require('chai').expect;
-const normalize         = require('../bin/normalize');
+const normalizeRequest  = require('../bin/normalize-request');
 
 describe('normalize', () => {
+    const server = { log: function() {} };
 
     describe('request parameters', () => {
 
@@ -33,7 +34,7 @@ describe('normalize', () => {
                     }
                 ];
                 const req = {};
-                normalize.requestParameters(req, parameters);
+                normalizeRequest(server, req, parameters);
                 expect(req).to.deep.equal({ body: 'hello' });
             });
 
@@ -46,7 +47,7 @@ describe('normalize', () => {
                     }
                 ];
                 const req = { body: '123' };
-                normalize.requestParameters(req, parameters);
+                normalizeRequest(server, req, parameters);
                 expect(req.body).to.equal(123);
             });
 
@@ -65,7 +66,7 @@ describe('normalize', () => {
                     }
                 ];
                 const req = {};
-                normalize.requestParameters(req, parameters);
+                normalizeRequest(server, req, parameters);
                 expect(req).to.deep.equal({ body: { foo: { headers: {}, content: 'hello' } } });
             });
 
@@ -84,7 +85,7 @@ describe('normalize', () => {
                         ]
                     }
                 };
-                normalize.requestParameters(req, parameters);
+                normalizeRequest(server, req, parameters);
                 expect(req).to.deep.equal({ body: { foo: { headers: {}, content: 123 } } });
             });
 
@@ -106,7 +107,7 @@ describe('normalize', () => {
                         ]
                     }
                 };
-                normalize.requestParameters(req, parameters);
+                normalizeRequest(server, req, parameters);
                 expect(req).to.deep.equal({ body: { foo: [{ headers: {}, content: 123 }, { headers: {}, content: 456 }] } });
             });
 
@@ -123,7 +124,7 @@ describe('normalize', () => {
                         foo: 'abc'
                     }
                 };
-                normalize.requestParameters(req, parameters);
+                normalizeRequest(server, req, parameters);
                 expect(req).to.deep.equal({ body: {} });
             });
 
@@ -147,7 +148,7 @@ describe('normalize', () => {
                     }
                 ];
                 const req = { headers: {} };
-                normalize.requestParameters(req, parameters);
+                normalizeRequest(server, req, parameters);
                 expect(req).to.deep.equal({ headers: { 'x-foo': 'abc', 'x-bar': 'def' } });
             });
 
@@ -162,7 +163,7 @@ describe('normalize', () => {
                     }
                 ];
                 const req = { headers: { 'x-foo': '1 2 3' } };
-                normalize.requestParameters(req, parameters);
+                normalizeRequest(server, req, parameters);
                 expect(req).to.deep.equal({ headers: { 'x-foo': [1, 2, 3] } });
             });
 
@@ -175,7 +176,7 @@ describe('normalize', () => {
                     }
                 ];
                 const req = { headers: { 'x-foo': '' } };
-                normalize.requestParameters(req, parameters);
+                normalizeRequest(server, req, parameters);
                 expect(req).to.deep.equal({ headers: { 'x-foo': false } });
             });
 
@@ -188,7 +189,7 @@ describe('normalize', () => {
                     }
                 ];
                 const req = { headers: { 'x-foo': '123.4' } };
-                normalize.requestParameters(req, parameters);
+                normalizeRequest(server, req, parameters);
                 expect(req).to.deep.equal({ headers: { 'x-foo': 123.4 } });
             });
 
@@ -201,7 +202,7 @@ describe('normalize', () => {
                     }
                 ];
                 const req = { headers: { 'x-foo': '123' } };
-                normalize.requestParameters(req, parameters);
+                normalizeRequest(server, req, parameters);
                 expect(req).to.deep.equal({ headers: { 'x-foo': 123 } });
             });
 
@@ -218,7 +219,7 @@ describe('normalize', () => {
                     }
                 ];
                 const req = { params: { foo: '123' } };
-                normalize.requestParameters(req, parameters);
+                normalizeRequest(server, req, parameters);
                 expect(req).to.deep.equal({ params: { foo: 123 } });
             });
 
@@ -242,7 +243,7 @@ describe('normalize', () => {
                     }
                 ];
                 const req = {};
-                normalize.requestParameters(req, parameters);
+                normalizeRequest(server, req, parameters);
                 expect(req).to.deep.equal({ query: { foo: 0, bar: 10 } });
             });
 
@@ -256,7 +257,7 @@ describe('normalize', () => {
                     }
                 ];
                 const req = { query: { foo: '123' }};
-                normalize.requestParameters(req, parameters);
+                normalizeRequest(server, req, parameters);
                 expect(req).to.deep.equal({ query: { foo: 123 } });
             });
 
@@ -275,7 +276,7 @@ describe('normalize', () => {
                         foo: [ '123', '456' ]
                     }
                 };
-                normalize.requestParameters(req, parameters);
+                normalizeRequest(server, req, parameters);
                 expect(req).to.deep.equal({ query: { foo: [123, 456] } });
             });
 
@@ -294,7 +295,7 @@ describe('normalize', () => {
                         foo: '123,456'
                     }
                 };
-                normalize.requestParameters(req, parameters);
+                normalizeRequest(server, req, parameters);
                 expect(req).to.deep.equal({ query: { foo: [123, 456] } });
             });
 
@@ -313,7 +314,7 @@ describe('normalize', () => {
                         foo: '123 456'
                     }
                 };
-                normalize.requestParameters(req, parameters);
+                normalizeRequest(server, req, parameters);
                 expect(req).to.deep.equal({ query: { foo: [123, 456] } });
             });
 
@@ -332,7 +333,7 @@ describe('normalize', () => {
                         foo: '123\t456'
                     }
                 };
-                normalize.requestParameters(req, parameters);
+                normalizeRequest(server, req, parameters);
                 expect(req).to.deep.equal({ query: { foo: [123, 456] } });
             });
 
@@ -351,7 +352,7 @@ describe('normalize', () => {
                         foo: '123|456'
                     }
                 };
-                normalize.requestParameters(req, parameters);
+                normalizeRequest(server, req, parameters);
                 expect(req).to.deep.equal({ query: { foo: [123, 456] } });
             });
 
@@ -370,7 +371,7 @@ describe('normalize', () => {
                         foo: '123,456'
                     }
                 };
-                normalize.requestParameters(req, parameters);
+                normalizeRequest(server, req, parameters);
                 expect(req).to.deep.equal({ query: { foo: [123, 456] } });
             });
 
