@@ -20,3 +20,8 @@ const middleware = require('./bin/middleware');
 middleware.testSwaggerResponseExamples = require('./bin/test-examples');
 
 module.exports = middleware;
+
+if (!module.parent) {
+    const swaggerFilePath = process.argv[2];
+    if (swaggerFilePath) middleware.testSwaggerResponseExamples(swaggerFilePath);
+}
