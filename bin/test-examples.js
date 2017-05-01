@@ -19,10 +19,57 @@ const acceptedMethods   = require('./accept-methods');
 const Enforcer          = require('swagger-enforcer');
 const path              = require('path');
 const swaggerLoad       = require('./swagger-load');
+const Typed             = require('fully-typed');
 
-module.exports = function(swaggerFilePath, callback, done) {
+const schema = Typed({
+    type: Object,
+    properties: {
+        flatten: {
+            type: Boolean,
+            default: false
+        }
+    }
+});
+
+exports.withMocha = function(description, swaggerFilePath, autoRun) {
+
+    if (typeof run !== 'function') throw Error('You must run mocha with the --delay flag to test the swagger response examples.');
+    if (arguments.length < 3) autoRun = true;
+
+    return exports.getTests(swaggerFilePath)
+        .then(tests => {
+            describe(description, () => {
+
+                Object.keys(tests).forEach(path => {
+                    describe(path, () => {
+
+                        Object.keys(tests[path]).forEach(method => {
+                            describe(method, () => {
+
+                                Object.keys(tests[path][method]).forEach(mimeType => {
+                                    it(mimeType, tests[path][method][mimeType]);
+                                });
+
+                            });
+                        });
+
+                    });
+                });
+
+            });
+
+            if (autoRun) run();
+        });
+
+
+};
+
+exports.getTests = function(swaggerFilePath, options) {
+    const config = schema.normalize(options || {});
     const fullPath = path.resolve(process.cwd(), swaggerFilePath);
-    const promise = swaggerLoad(fullPath)
+    const tests = {};
+
+    return swaggerLoad(fullPath)
         .then(swagger => {
             if (!swagger.hasOwnProperty('paths')) return;
 
@@ -30,6 +77,7 @@ module.exports = function(swaggerFilePath, callback, done) {
             Object.keys(swagger.paths)
                 .forEach(function(path) {
                     const pathSchema = swagger.paths[path];
+                    tests[path] = {};
 
                     // methods
                     Object.keys(pathSchema)
@@ -37,6 +85,7 @@ module.exports = function(swaggerFilePath, callback, done) {
                         .forEach(method => {
                             const methodSchema = pathSchema[method];
                             if (!methodSchema.hasOwnProperty('responses')) return;
+                            tests[path][method] = {};
 
                             // responses
                             Object.keys(methodSchema.responses)
@@ -50,17 +99,30 @@ module.exports = function(swaggerFilePath, callback, done) {
                                     // examples
                                     Object.keys(responseSchema.examples)
                                         .forEach(mimeType => {
-                                            callback(method.toUpperCase() + ' ' + path + ' ' + mimeType, function() {
+                                            tests[path][method][mimeType] = function() {
                                                 const example = responseSchema.examples[mimeType];
                                                 enforcer.validate(example);
-                                            });
+                                            };
                                         });
                                 });
                         });
                 });
-        });
+        })
+        .then(() => {
+            if (!config.flatten) return tests;
 
-    // resolve async in appropriate paradigm
-    if (typeof done !== 'function') return promise;
-    promise.then(() => done(), err => done(err));
+            const flat = [];
+            Object.keys(tests).forEach(path => {
+                Object.keys(tests[path]).forEach(method => {
+                    Object.keys(tests[path][method]).forEach(mimeType => {
+                        flat.push({
+                            description: method.toUpperCase() + ' ' + path + ' ' + mimeType,
+                            test: tests[path][method][mimeType]
+                        });
+                    });
+                });
+            });
+            return flat;
+        })
+        .then(() => tests);
 };

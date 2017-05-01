@@ -16,4 +16,7 @@
  **/
 'use strict';
 
-module.exports = require('./bin/middleware');
+const middleware = require('./bin/middleware');
+middleware.testSwaggerResponseExamples = require('./bin/test-examples');
+
+module.exports = middleware;
