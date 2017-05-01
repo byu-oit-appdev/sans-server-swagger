@@ -31,11 +31,27 @@ const schema = Typed({
     }
 });
 
-exports.withMocha = function(description, swaggerFilePath, autoRun) {
+module.exports = testSwaggerResponseExamples;
+
+function testSwaggerResponseExamples(swaggerFilePath) {
+    return testSwaggerResponseExamples.getTests(swaggerFilePath, { flatten: true })
+        .then(tests => {
+            tests.forEach(test => {
+                try {
+                    test.test();
+                    console.log('\u001b[92m\u2713 ' + test.description + '\u001b[39m');
+                } catch (err) {
+                    console.log('\u001b[91m\u2717 ' + test.description + '\n    ' + err.message + '\u001b[39m');
+                }
+            });
+        });
+}
+
+testSwaggerResponseExamples.withMocha = function(description, swaggerFilePath, autoRun) {
     if (typeof run !== 'function') throw Error('You must run mocha with the --delay flag to test the swagger response examples.');
     if (arguments.length < 3) autoRun = true;
 
-    return exports.getTests(swaggerFilePath)
+    return testSwaggerResponseExamples.getTests(swaggerFilePath)
         .then(tests => {
             describe(description, () => {
 
@@ -61,8 +77,8 @@ exports.withMocha = function(description, swaggerFilePath, autoRun) {
         });
 };
 
-exports.withTape = function(tape, swaggerFilePath) {
-    return exports.getTests(swaggerFilePath, { flatten: true })
+testSwaggerResponseExamples.withTape = function(tape, swaggerFilePath) {
+    return testSwaggerResponseExamples.getTests(swaggerFilePath, { flatten: true })
         .then(tests => {
             tests.forEach(test => {
                 try {
@@ -76,7 +92,7 @@ exports.withTape = function(tape, swaggerFilePath) {
 };
 
 
-exports.getTests = function(swaggerFilePath, options) {
+testSwaggerResponseExamples.getTests = function(swaggerFilePath, options) {
     const config = schema.normalize(options || {});
     const fullPath = path.resolve(process.cwd(), swaggerFilePath);
     const tests = {};
@@ -135,6 +151,5 @@ exports.getTests = function(swaggerFilePath, options) {
                 });
             });
             return flat;
-        })
-        .then(() => tests);
+        });
 };
