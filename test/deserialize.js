@@ -33,6 +33,10 @@ describe('deserialize', () => {
             expect(v.toString('utf8')).to.equal('hello');
         });
 
+        it('invalid value throws error', () => {
+            expect(() => deserialize.binary('01')).to.throw(Error);
+        });
+
     });
 
     describe('byte', () => {
@@ -49,6 +53,10 @@ describe('deserialize', () => {
             expect(v.toString('utf8')).to.equal('hello');
         });
 
+        it('invalid value throws error', () => {
+            expect(() => deserialize.byte('!')).to.throw(Error);
+        });
+
     });
 
     describe('date', () => {
@@ -59,10 +67,22 @@ describe('deserialize', () => {
             expect(+d1).to.equal(+d2);
         });
 
-        it('not date', () => {
-            const d1 = deserialize.date('2000-01-01');
+        it('invalid value throws error', () => {
+            expect(() => deserialize.date('abc')).to.throw(Error);
+        });
+
+    });
+
+    describe('date-time', () => {
+
+        it('valid', () => {
+            const d1 = deserialize.dateTime('2000-01-01T00:00:00.000Z');
             const d2 = new Date('2000-01-01T00:00:00.000Z');
             expect(+d1).to.equal(+d2);
+        });
+
+        it('invalid value throws error', () => {
+            expect(() => deserialize.dateTime('abc')).to.throw(Error);
         });
 
     });
