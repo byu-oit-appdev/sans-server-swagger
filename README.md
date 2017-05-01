@@ -180,3 +180,61 @@ Manual mocking only works if these conditions are met:
 3. There must be a [mock source](#mock-sources).
 
 For mocks that are [sourced](#mock-sources) from the swagger document examples the [mocked query parameter](#configuration) value is used in conjunction with the request's `Accept` header to determine which response example to send back. If the request's `Accept` header is not set then the first example's content type will be used.
+
+### Testing Response Examples
+
+There is no need to write test cases for all of your swagger response examples. A tool has been provided that will do this for you.
+
+**Validate Response Examples using Terminal/Command Line**
+
+For this to work you'll need to install the sans-server-swagger module globally `npm install -g sans-server-swagger`. Then run the following command with the parameter being the path to your swagger file:
+
+```text
+sans-server-swagger ./swagger.yaml
+```
+
+**Validate With Mocha**
+
+You can have validation run with your mocha tests, but you'll need to run the test with the `--delay` flag.
+
+```js
+const Swagger = require('sans-server-swagger');
+Swagger.testSwaggerResponseExamples.withMocha('swagger response examples', './swagger.yaml');
+```
+
+Run tests:
+
+```text
+mocha tests/*.js --delay
+```
+
+**Validate With Tape**
+
+You can have validation run with your tape tests:
+
+```js
+const Swagger = require('sans-server-swagger');
+const tape = require('tape');
+
+Swagger.testSwaggerResponseExamples.withTape(tape, './swagger.yaml');
+```
+
+**Validate Another Way**
+
+You can get all of the tests and their descriptions as a nested object or as an array (by using the `flatten` option). Once you have all tests you can run them one-by-one and tie them into your own testing tools.
+
+```js
+const Swagger = require('sans-server-swagger');
+
+Swagger.testSwaggerResponseExamples.getTests('./swagger.yaml', { flatten: true })
+    .then(tests => {
+        tests.forEach(test => {
+            try {
+                test.test();
+                console.log('PASSED ' + test.description);
+            } catch (err) {
+                console.log('FAILED ' + test.description + ' because ' + err.message);
+            }
+        })
+    });
+```
