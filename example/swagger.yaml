@@ -22,27 +22,23 @@ paths:
       - pets
       parameters:
       - "$ref": "#/parameters/mock"
-      - name: mode
+      - name: tag
         in: query
-        enum:
-        - empty
-        - invalid
-        - valid
-        description: Specify the type of data to attempt to return.
+        description: Specify the tag to filter pets by.
         required: false
         type: string
       responses:
         '200':
-          description: An paged array of pets
+          description: An array of pets
           examples:
             application/json:     # Mocks will be produced from examples
             - id: 123
               name: Sparky
               tag: Dog
-            - id: 456
+            - id: 45.6
               name: Ghost
               tag: Cat
-            - id: 789
+            - id: 78.9
               name: Goldy
               tag: Fish
           schema:
@@ -119,6 +115,24 @@ paths:
           description: unexpected error
           schema:
             "$ref": "#/definitions/Error"
+  "/pet-name/{petId}":
+    get:
+      summary: Get the name of the pet with the specified pet ID.
+      operationId: getPetNameById
+      parameters:
+      - "$ref": "#/parameters/mock"
+      - name: petId
+        in: path
+        required: true
+        description: The id of the pet to retrieve
+        type: integer
+      responses:
+        '200':
+          description: Expected response to a valid request
+          schema:
+            type: string
+          examples:
+            text/plain: 123
 parameters:
   mock:
     name: mock

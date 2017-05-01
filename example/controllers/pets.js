@@ -18,18 +18,10 @@
 
 // an implemented example for a path
 exports.listPets = function(req, res) {
-    if (req.query.mode === 'valid') {
+    if (req.query.tag === 'dog') {
         res.send([
             {
                 id: 123,
-                name: 'Fido',
-                tag: 'Dog'
-            }
-        ]);
-    } else if (req.query.mode === 'invalid') {
-        res.send([
-            {
-                id: '123',
                 name: 'Fido',
                 tag: 'Dog'
             }
