@@ -32,7 +32,6 @@ const schema = Typed({
 });
 
 exports.withMocha = function(description, swaggerFilePath, autoRun) {
-
     if (typeof run !== 'function') throw Error('You must run mocha with the --delay flag to test the swagger response examples.');
     if (arguments.length < 3) autoRun = true;
 
@@ -60,9 +59,22 @@ exports.withMocha = function(description, swaggerFilePath, autoRun) {
 
             if (autoRun) run();
         });
-
-
 };
+
+exports.withTape = function(tape, swaggerFilePath) {
+    return exports.getTests(swaggerFilePath, { flatten: true })
+        .then(tests => {
+            tests.forEach(test => {
+                try {
+                    test.test();
+                    tape.pass(test.description);
+                } catch (err) {
+                    tape.error(err)
+                }
+            });
+        });
+};
+
 
 exports.getTests = function(swaggerFilePath, options) {
     const config = schema.normalize(options || {});
