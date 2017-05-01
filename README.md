@@ -70,17 +70,17 @@ In summary:
 
 2. Each path's controller implementation is defined by it's `x-controller` and `operationId`.
 
-    - `x-controller` is the name of the file within the controllers directory that implements the function defined by the `operationId`. The `x-controller` can be defined for the entire swagger document, for a specific path, or for a specific method within a path by defining this property at those different levels within your swagger document.
+    - `x-controller` is the name of the file within the controllers directory that implements the function defined by the `operationId`. The `x-controller` can be defined for the entire swagger document, for a specific path, or for a specific method within a path by defining this property at those different levels within your swagger document. An `x-controller` defined at one level can be overwritten by another `x-controller` at a more specific level.
 
     - `operationId` is the name of the property within your controller that has the function to execute. This function will receive as parameters the sans-server request and response objects.
     
     **For example purposes only**, in the following example the `x-controller` is defined at the document level, the path level, and the method level. In actuality, the `x-controller` only needs to be defined at each appropriate level once. If defined at the document level then all paths and methods will use that controller unless a specific path or method has an `x-controller` specified as something else.
 
     ```yaml
-    x-controller: pets              # All paths will use pets.js controller
+    x-controller: pets              # All methods for all paths will use pets.js controller unless overwritten
     paths:
       "/pets":
-        x-controller: pets          # This path will use the pets.js controller
+        x-controller: pets          # This path will use the pets.js controller for all methods within this path unless overwritten
         get:
           x-controller: pets        # This method within this path will use the pets.js controller
           summary: List all pets
