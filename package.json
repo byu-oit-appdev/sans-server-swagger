@@ -3,6 +3,9 @@
   "version": "0.0.15",
   "description": "Sans-Server middleware that uses swagger documents to define routes, validate requests, validate responses, and to produce mocks.",
   "main": "index.js",
+  "bin": {
+    "sans-server-swagger": "index.js"
+  },
   "scripts": {
     "test": "mocha test/*.js",
     "coverage": "nyc --reporter=html mocha test/*.js",

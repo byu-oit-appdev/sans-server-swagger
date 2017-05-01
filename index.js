@@ -1,3 +1,4 @@
+#! /usr/bin/env node
 /**
  *  @license
  *    Copyright 2016 Brigham Young University
