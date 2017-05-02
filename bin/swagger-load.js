@@ -21,13 +21,13 @@ const yaml              = require('js-yaml');
 
 /**
  * Load the swagger file and resolve all references.
- * @param {string} swaggerFilePath
+ * @param {string, object} swaggerFilePath
  * @returns {Promise<Object>}
  */
 module.exports = function(swaggerFilePath) {
-    const swagger = /\.json$/.test(swaggerFilePath)
-        ? require(swaggerFilePath)
-        : yaml.load(fs.readFileSync(swaggerFilePath, 'utf8'));
+    const swagger = typeof swaggerFilePath === 'string'
+        ? /\.json$/.test(swaggerFilePath) ? require(swaggerFilePath) : yaml.load(fs.readFileSync(swaggerFilePath, 'utf8'))
+        : swaggerFilePath;
 
     return jsonRefs.resolveRefs(swagger).then(data => data.resolved);
 };
