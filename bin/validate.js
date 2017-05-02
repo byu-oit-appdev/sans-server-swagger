@@ -16,7 +16,6 @@
  **/
 'use strict';
 const Enforcer          = require('swagger-enforcer');
-const is                = require('./is');
 
 /**
  * Build a request validator function.
