@@ -16,33 +16,38 @@
  **/
 'use strict';
 const expect            = require('chai').expect;
-const byuApi            = require('../../index');
+const Router            = require('sans-server-router');
+const Server            = require('sans-server');
+const Swagger           = require('../../index');
+
+Swagger.testSwaggerResponseExamples.withMocha('swagger response examples', './swagger.yaml');
 
 describe('api', () => {
-
+    let server;
     const config = {
         controllers: './controllers',
         development: true,
-        swagger: './swagger.json'
+        router: Router({ paramFormat: 'handlebar' }),
+        swagger: './swagger.yaml'
     };
 
-    let api;
-
     before(() => {
-        api = byuApi(config);
+        server = Server();
+        const swaggerMiddleware = Swagger(config);
+        server.use(swaggerMiddleware);
     });
 
     afterEach(() => console.log('\n'));
 
-    it('GET /v1/pets?mode=empty', () => {
-        return api.request({ method: 'GET', path: '/v1/pets?mode=empty' })
+    it('Implementation test for GET /v1/pets?tag=mouse', () => {
+        return server.request({ method: 'GET', path: '/v1/pets?tag=mouse' })
             .then(res => {
                 expect(res.body).to.equal('[]');
             });
     });
 
-    it('GET /v1/pets?mode=valid', () => {
-        return api.request({ method: 'GET', path: '/v1/pets?mode=valid' })
+    it('Implementation test for GET /v1/pets?tag=dog', () => {
+        return server.request({ method: 'GET', path: '/v1/pets?tag=dog' })
             .then(res => {
                 const value = JSON.stringify([
                     {
@@ -55,17 +60,17 @@ describe('api', () => {
             });
     });
 
-    it('GET /v1/pets?mode=invalid', () => {
-        return api.request({ method: 'GET', path: '/v1/pets?mode=invalid' })
+    it('Invalid query parameter', () => {
+        return server.request({ method: 'GET', path: '/v1/pets?invalid' })
             .then(res => {
-                expect(res.statusCode).to.equal(500);
+                expect(res.statusCode).to.equal(400);
             });
     });
 
-    it('response[0] mock from example GET /v1/pets?mock', () => {
-        return api.request({ method: 'GET', path: '/v1/pets', query: { mock: '' } })
+    it('Mock implemented endpoint GET /v1/pets?mock', () => {
+        return server.request({ method: 'GET', path: '/v1/pets', query: { mock: '' } })
             .then(res => {
-                const example = JSON.stringify([
+                /*const example = JSON.stringify([
                     {
                         "id": 123,
                         "name": "Sparky",
@@ -81,13 +86,13 @@ describe('api', () => {
                         "name": "Goldy",
                         "tag": "Fish"
                     }
-                ]);
-                expect(res.body).to.equal(example);
+                ]);*/
+                expect(res.statusCode).to.equal(500);
             });
     });
 
     it('POST missing required body', () => {
-        return api.request({ method: 'POST', path: '/v1/pets/' })
+        return server.request({ method: 'POST', path: '/v1/pets/' })
             .then(res => {
                 console.log(res.body);
                 expect(res.body).to.have.string('Missing required body');
@@ -96,25 +101,25 @@ describe('api', () => {
     });
 
     it('POST invalid body missing required properties', () => {
-        return api.request({ method: 'POST', path: '/v1/pets/', body: {} })
+        return server.request({ method: 'POST', path: '/v1/pets/', body: {} })
             .then(res => {
                 console.log(res.body);
-                expect(res.body).to.have.string('missing required properties');
+                expect(res.body).to.have.string('Missing required property');
                 expect(res.statusCode).to.equal(400);
             });
     });
 
     it('POST invalid body invalid property value', () => {
-        return api.request({ method: 'POST', path: '/v1/pets/', body: { id: '123', name: 'Mittens' } })
+        return server.request({ method: 'POST', path: '/v1/pets/', body: { id: '123', name: 'Mittens' } })
             .then(res => {
                 console.log(res.body);
-                expect(res.body).to.have.string('Error in property');
+                expect(res.body).to.have.string('Error in body');
                 expect(res.statusCode).to.equal(400);
             });
     });
 
     it('401 mock from example POST /v1/pets?mock=401', () => {
-        return api.request({ method: 'POST', path: '/v1/pets', query: { mock: '401' }, body: { id: 123, name: 'Mittens' } })
+        return server.request({ method: 'POST', path: '/v1/pets', query: { mock: '401' }, body: { id: 123, name: 'Mittens' } })
             .then(res => {
                 const example = JSON.stringify({
                     "code": 401,
@@ -125,8 +130,15 @@ describe('api', () => {
     });
 
     it('501 for missing implementation POST /v1/pets', () => {
-        const configuration = Object.assign({}, config, { development: false });
-        const api = byuApi(configuration);
+        const configuration = Object.assign({}, config, {
+            development: false,
+            router: Router({ paramFormat: 'handlebar' })
+        });
+
+        const api = Server();
+        const swaggerMiddleware = Swagger(configuration);
+        api.use(swaggerMiddleware);
+
         return api.request({ method: 'POST', path: '/v1/pets', body: { id: 123, name: 'Mittens' } })
             .then(res => {
                 expect(res.statusCode).to.equal(501);
@@ -134,14 +146,14 @@ describe('api', () => {
     });
 
     it('501 for 403 mock missing example POST /v1/pets?mock=403', () => {
-        return api.request({ method: 'POST', path: '/v1/pets?mock=403', body: { id: 123, name: 'Mittens' } })
+        return server.request({ method: 'POST', path: '/v1/pets?mock=403', body: { id: 123, name: 'Mittens' } })
             .then(res => {
                 expect(res.statusCode).to.equal(501);
             });
     });
 
     it('mock via function for GET /v1/pets/8?mock', () => {
-        return api.request({ method: 'GET', path: '/v1/pets/8?mock' })
+        return server.request({ method: 'GET', path: '/v1/pets/8?mock' })
             .then(res => {
                 const mock = JSON.stringify({
                     id: 8,
@@ -153,28 +165,28 @@ describe('api', () => {
     });
 
     it('mock via function for GET /v1/pets/8?mock=404', () => {
-        return api.request({ method: 'GET', path: '/v1/pets/8', query: { mock: '404' } })
+        return server.request({ method: 'GET', path: '/v1/pets/8', query: { mock: '404' } })
             .then(res => {
                 expect(res.body).to.equal('Pet not found: 8');
             });
     });
 
     it('404 for bad path', () => {
-        return api.request({ method: 'GET', path: '/' })
+        return server.request({ method: 'GET', path: '/' })
             .then(res => {
                 expect(res.statusCode).to.equal(404);
             });
     });
 
     it('405 for bad method', () => {
-        return api.request({ method: 'PUT', path: '/v1/pets' })
+        return server.request({ method: 'PUT', path: '/v1/pets' })
             .then(res => {
                 expect(res.statusCode).to.equal(405);
             });
     });
 
     it('500 for bad response', () => {
-        return api.request({ method: 'GET', path: '/v1/pets/123' })
+        return server.request({ method: 'GET', path: '/v1/pets/123' })
             .then(res => {
                 expect(res.statusCode).to.equal(500);
             });

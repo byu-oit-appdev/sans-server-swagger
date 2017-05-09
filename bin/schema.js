@@ -1,6 +1,6 @@
 /**
  *  @license
- *    Copyright 2016 Brigham Young University
+ *    Copyright 2017 Brigham Young University
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -47,11 +47,18 @@ module.exports = Typed({
             type: Function,
             required: true
         },
-        swagger: {
-            type: String,
-            required: true,
-            pattern: /\.(?:json|yaml)$/i,
-            transform: p => path.resolve(process.cwd(), p)
-        }
+        swagger: [
+            {
+                type: String,
+                required: true,
+                pattern: /\.(?:json|yaml)$/i,
+                transform: p => path.resolve(process.cwd(), p)
+            },
+            {
+                type: Object,
+                allowNull: false,
+                required: true
+            }
+        ]
     }
 });

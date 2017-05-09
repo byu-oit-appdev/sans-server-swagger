@@ -1,3 +1,4 @@
+#! /usr/bin/env node
 /**
  *  @license
  *    Copyright 2016 Brigham Young University
@@ -16,4 +17,12 @@
  **/
 'use strict';
 
-module.exports = require('./bin/middleware');
+const middleware = require('./bin/middleware');
+middleware.testSwaggerResponseExamples = require('./bin/test-examples');
+
+module.exports = middleware;
+
+if (!module.parent) {
+    const swaggerFilePath = process.argv[2];
+    if (swaggerFilePath) middleware.testSwaggerResponseExamples(swaggerFilePath);
+}

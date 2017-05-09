@@ -16,18 +16,4 @@
  **/
 'use strict';
 
-exports.array = function(value) {
-    return Array.isArray(value);
-};
-
-exports.dateObject = function(value) {
-    return typeof value === 'object' && value instanceof Date && !isNaN(value);
-};
-
-exports.nonNullObject = function(value) {
-    return value && typeof value === 'object' && value.constructor.name === 'Object';
-};
-
-exports.number = function(value) {
-    return typeof value === 'number' && !isNaN(value);
-};
+module.exports = { get: true, post: true, put: true, delete: true, options: true, head: true, patch: true };

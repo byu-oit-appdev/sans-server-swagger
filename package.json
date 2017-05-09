@@ -1,11 +1,14 @@
 {
   "name": "sans-server-swagger",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "description": "Sans-Server middleware that uses swagger documents to define routes, validate requests, validate responses, and to produce mocks.",
   "main": "index.js",
+  "bin": {
+    "sans-server-swagger": "index.js"
+  },
   "scripts": {
     "test": "mocha test/*.js",
-    "coverage": "nyc --reporter=html --reporter=text mocha test/*.js",
+    "coverage": "nyc --reporter=html mocha test/*.js",
     "coverage:report": "nyc mocha test/*.js && nyc report --reporter=text-lcov | coveralls"
   },
   "keywords": [
@@ -22,13 +25,14 @@
     "coveralls": "^2.11.15",
     "mocha": "^3.2.0",
     "nyc": "^10.1.2",
-    "sans-server": "*",
+    "sans-server": "^1.0.0",
     "sans-server-router": "*"
   },
   "dependencies": {
     "fully-typed": "^1.0.0",
     "js-yaml": "^3.7.0",
-    "json-refs": "^2.1.6"
+    "json-refs": "^2.1.6",
+    "swagger-enforcer": "^1.0.0"
   },
   "repository": {
     "type": "git",

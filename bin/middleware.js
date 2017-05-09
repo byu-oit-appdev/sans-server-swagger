@@ -1,6 +1,6 @@
 /**
  *  @license
- *    Copyright 2016 Brigham Young University
+ *    Copyright 2017 Brigham Young University
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,41 +15,33 @@
  *    limitations under the License.
  **/
 'use strict';
-const bodyParser        = require('./body-parser');
+const acceptedMethods   = require('./accept-methods');
 const checkSwagger      = require('./check-swagger');
 const deserialize       = require('./deserialize');
-const fs                = require('fs');
-const jsonRefs          = require('json-refs');
-const normalize         = require('./normalize');
+const Enforcer          = require('swagger-enforcer');
+const normalizeRequest  = require('./normalize-request');
 const path              = require('path');
 const schema            = require('./schema');
+const swaggerLoad       = require('./swagger-load');
 const validate          = require('./validate');
-const yaml              = require('js-yaml');
-
-const acceptedMethods = { get: true, post: true, put: true, delete: true, options: true, head: true, patch: true };
 
 module.exports = function (configuration) {
     const config = schema.normalize(configuration);
     const mockQP = config.mockQueryParameter;
     const router = config.router;
-    let ready = false;
-
-    // produce the swagger object
-    const swagger = /\.json$/.test(config.swagger)
-        ? require(config.swagger)
-        : yaml.load(fs.readFileSync(config.swagger, 'utf8'));
-
-    // make sure that there is a basePath that starts with slash
-    if (!swagger.hasOwnProperty('basePath')) swagger.basePath = '/';
-    swagger.basePath = '/' + swagger.basePath.replace(/^\//, '').replace(/\/$/, '');
-    const rxBasepath = new RegExp('^' + (swagger.basePath === '/' ? '' : '\\' + swagger.basePath) + '(?:\\/|\\?|$)');
 
     // resolve swagger json references and process swagger object
-    const promise = jsonRefs.resolveRefs(swagger)
-        .then(data => {
-            const swagger = data.resolved;
+    const promise = swaggerLoad(config.swagger)
+        .then(swagger => {
+
+            // make sure that there is a basePath that starts with slash
+            if (!swagger.hasOwnProperty('basePath')) swagger.basePath = '/';
+            swagger.basePath = '/' + swagger.basePath.replace(/^\//, '').replace(/\/$/, '');
+            const rxBasepath = new RegExp('^' + (swagger.basePath === '/' ? '' : '\\' + swagger.basePath) + '(?:\\/|\\?|$)');
+
             const swagggerErrors = checkSwagger(swagger);
             const swaggerString = JSON.stringify(swagger);
+            if (!swagger.definitions) swagger.definitions = {};
 
             // normalize required properties
             transitionRequiredToProperties(swagger);
@@ -59,15 +51,12 @@ module.exports = function (configuration) {
                 loadController(config.controllers, swagger['x-controller'], config.development) :
                 null;
 
-            // if there is a swagger endpoint then define that path
+            // if there is to be a swagger endpoint then define that path
             if (config.endpoint) {
-                router.get(config.ignoreBasePath ? config.endpoint : swagger.basePath + config.endpoint, (req, res) => {
+                router.get(config.ignoreBasePath ? config.endpoint : swagger.basePath.replace(/\/$/, '') + config.endpoint, (req, res) => {
                     res.send(200, swaggerString, { 'Content-Type': 'application/json' });
                 });
             }
-
-            // check if the swagger consumes form input
-            const bodyParserMiddleware = bodyParser(swagger.consumes);
 
             if (swagger.hasOwnProperty('paths')) {
                 Object.keys(swagger.paths)
@@ -84,13 +73,14 @@ module.exports = function (configuration) {
                                 const pathErrors = [];
                                 const methodSchema = pathSchema[method];
 
+                                // if in development mode and there is no "mock" query parameter then create it to allow for valid mocking
                                 if (config.development) {
                                     if (!methodSchema.hasOwnProperty('parameters')) methodSchema.parameters = [];
                                     const hasMockQueryParam = methodSchema.parameters
-                                        .filter(p => p.name === 'mock' && p.in === 'query')[0] !== undefined;
+                                        .filter(p => p.name === mockQP && p.in === 'query')[0] !== undefined;
                                     if (!hasMockQueryParam) {
                                         methodSchema.parameters.push({
-                                            name: 'mock',
+                                            name: mockQP,
                                             in: 'query',
                                             description: 'Produces a mocked response.',
                                             required: false,
@@ -119,8 +109,9 @@ module.exports = function (configuration) {
 
                                         // validate default parameter values
                                         if (p.hasOwnProperty('default')) {
-                                            const err = validate.byType(p.default, p, 0);
-                                            if (err) pathErrors.push('Default value does not pass validation for parameter: ' + p.name);
+                                            Enforcer(p, swagger.definitions, { enforce: true, useDefaults: true })
+                                                .errors()
+                                                .forEach(err => pathErrors.push(err.message));
                                         }
                                     });
                                 }
@@ -135,60 +126,47 @@ module.exports = function (configuration) {
                                         path + '\n    ' + pathErrors.join('\n    '));
                                 }
 
-                                // define the route
-                                router[method](fullPath, bodyParserMiddleware, function(req, res) {
+                                // define the request and response validator functions
+                                const validateRequest = validate.request(methodSchema, swagger.definitions);
+                                const validateResponse = validate.response(methodSchema, swagger.definitions);
+
+                                //////////////////////////////
+                                //                          //
+                                //      DEFINE THE ROUTE    //
+                                //                          //
+                                //////////////////////////////
+                                router[method](fullPath, function(req, res) {
                                     const server = this;
-                                    let validateResponse = true;
+                                    let responseNeedsValidation = true;
 
                                     // deserialize the request parameters
-                                    if (Array.isArray(methodSchema.parameters)) deserialize.request(req, methodSchema.parameters);
+                                    if (Array.isArray(methodSchema.parameters)) normalizeRequest(server, req, methodSchema.parameters);
 
                                     // validate the request
-                                    const err = validate.request(req, methodSchema, swagger.definitions);
+                                    const err = validateRequest(req);
                                     if (err) {
-                                        validateResponse = false;
+                                        responseNeedsValidation = false;
+                                        server.log('request-error', 'Invalid request.');
                                         res.status(400);
                                         return res.send(err);
                                     }
 
+                                    // add the deserialize object to the request
+                                    req.deserialize = deserialize;
+
                                     // add a hook to validate the response before send
                                     res.hook(function(state) {
-                                        if (validateResponse && !(state.body instanceof Error)) {
-                                            const responseDefinition = methodSchema.responses &&
-                                                methodSchema.responses[state.statusCode];
-
-                                            const errStr = !responseDefinition
-                                                ? 'Invalid swagger response code: ' + state.statusCode
-                                                : responseDefinition.schema ? validate.response(state.body, responseDefinition.schema, swagger.definitions, 24) : null;
-
-                                            // if there is an error then update the resonse message
-                                            if (errStr) {
+                                        if (responseNeedsValidation && !(state.body instanceof Error)) {
+                                            const err = validateResponse.validate(state.statusCode, state.body);
+                                            if (err) {
                                                 server.log('response-error', 'Invalid response.');
-                                                const err = Error(errStr);
-                                                this.body(err);
+                                                this.body(Error(err));
                                             }
                                         }
                                     });
 
                                     // add a build method to the request object
-                                    res.build = function(code) {
-                                        // TODO: eventually add swagger response here
-
-                                        if (!methodSchema.responses.hasOwnProperty(code)) {
-                                            throw Error('Invalid response code for path: ' + method.toUpperCase() + ' ' + fullPath);
-                                        }
-                                        const responseSchema = methodSchema.responses[code];
-                                        const type = normalize.schemaType(responseSchema);
-                                        server.log('swagger-build', 'Not yet fully implemented.');
-
-                                        if (type === 'object') {
-                                            return {};
-                                        } else if (type === 'array') {
-                                            return {};
-                                        } else {
-                                            return '';
-                                        }
-                                    };
+                                    res.enforce = validateResponse.enforce;
 
                                     // if it should be mocked
                                     if (req.query.hasOwnProperty(mockQP) || (!handler && config.development)) {
@@ -208,7 +186,7 @@ module.exports = function (configuration) {
 
                                         // schema-less response mocking
                                         } else if (!responseSchema.hasOwnProperty('schema')) {
-                                            server.log('mock', 'Executing mock without for schema-less response. Body set to empty.');
+                                            server.log('mock', 'Executing mock for schema-less response. Body set to empty.');
                                             res.send(mockCode, '');
 
                                         // check for mock example
@@ -226,7 +204,7 @@ module.exports = function (configuration) {
                                                 res.send(examples[match]);
                                             } else {
                                                 server.log('mock', 'example not implemented');
-                                                validateResponse = false;
+                                                responseNeedsValidation = false;
                                                 res.sendStatus(501);
                                             }
                                         }
@@ -237,7 +215,7 @@ module.exports = function (configuration) {
                                         executeController(server, handler, req, res);
 
                                     } else {
-                                        validateResponse = false;
+                                        responseNeedsValidation = false;
                                         res.sendStatus(501);
                                     }
                                 });
@@ -250,30 +228,32 @@ module.exports = function (configuration) {
                 console.error('One or more errors found in the swagger document:\n  ' + swagggerErrors.join('\n  '));
             }
 
-            ready = true;
+            return rxBasepath;
         });
 
     // if the promise doesn't resolve then the server can start but wont respond to requests
-    promise.catch(err => {
+    /*promise.catch(err => {
         console.error(err.stack);
-    });
+    });*/
 
     // return the middleware function - this essentially makes sure the router is ready before processing router middleware
     return function swaggerRouter(req, res, next) {
         const server = this;
+        promise.then(
+            rxBasepath => {
+                // log an message if not within the base path
+                if (!config.ignoreBasePath && !rxBasepath.test(req.path)) {
+                    server.log('path', 'The request path does not fall within the basePath: ' + req.url);
+                }
 
-        function execute() {
-            router.call(server, req, res, next);
-        }
-
-        // if the path does not match the base path then exit middleware
-        if (!config.ignoreBasePath && !rxBasepath.test(req.path)) {
-            this.log('path', 'The request path does not fall within the basePath: ' + req.url);
-            execute();
-
-        } else {
-            ready ? execute() : promise.then(() => execute());
-        }
+                // execute the router
+                router.call(server, req, res, next);
+            },
+            err => {
+                server.log('error', err.message, err);
+                next();
+            }
+        );
     };
 };
 
@@ -290,6 +270,25 @@ function executeController(server, controller, req, res) {
     } catch (err) {
         res.send(err);
     }
+}
+
+/**
+ * Look through swagger examples and find a match based on the accept content type
+ * @param {object} examples
+ * @param {string} accept
+ * @returns {*}
+ */
+function findMatchingExample(examples, accept) {
+    const keys = examples ? Object.keys(examples) : [];
+    if (keys.length === 0) return undefined;
+    if (accept === '*') return keys[0];
+
+    const parts = accept.split('/');
+    const match = keys.filter(k => {
+        const ar = k.split('/');
+        return (parts[0] === '*' || parts[0] === ar[0]) && (parts[1] === '*' || parts[1] === ar[1]);
+    });
+    return match[0];
 }
 
 /**
@@ -311,25 +310,6 @@ function loadController(controllersDirectory, controller, development) {
             throw e;
         }
     }
-}
-
-/**
- * Look through swagger examples and find a match based on the accept content type
- * @param {object} examples
- * @param {string} accept
- * @returns {*}
- */
-function findMatchingExample(examples, accept) {
-    const keys = examples ? Object.keys(examples) : [];
-    if (keys.length === 0) return undefined;
-    if (accept === '*') return keys[0];
-
-    const parts = accept.split('/');
-    const match = keys.filter(k => {
-        const ar = k.split('/');
-        return (parts[0] === '*' || parts[0] === ar[0]) && (parts[1] === '*' || parts[1] === ar[1]);
-    });
-    return match[0];
 }
 
 /**
