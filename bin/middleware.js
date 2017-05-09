@@ -53,7 +53,7 @@ module.exports = function (configuration) {
 
             // if there is to be a swagger endpoint then define that path
             if (config.endpoint) {
-                router.get(config.ignoreBasePath ? config.endpoint : swagger.basePath + config.endpoint, (req, res) => {
+                router.get(config.ignoreBasePath ? config.endpoint : swagger.basePath.replace(/\/$/, '') + config.endpoint, (req, res) => {
                     res.send(200, swaggerString, { 'Content-Type': 'application/json' });
                 });
             }
@@ -186,7 +186,7 @@ module.exports = function (configuration) {
 
                                         // schema-less response mocking
                                         } else if (!responseSchema.hasOwnProperty('schema')) {
-                                            server.log('mock', 'Executing mock without for schema-less response. Body set to empty.');
+                                            server.log('mock', 'Executing mock for schema-less response. Body set to empty.');
                                             res.send(mockCode, '');
 
                                         // check for mock example
@@ -232,22 +232,28 @@ module.exports = function (configuration) {
         });
 
     // if the promise doesn't resolve then the server can start but wont respond to requests
-    promise.catch(err => {
+    /*promise.catch(err => {
         console.error(err.stack);
-    });
+    });*/
 
     // return the middleware function - this essentially makes sure the router is ready before processing router middleware
     return function swaggerRouter(req, res, next) {
         const server = this;
-        promise.then(rxBasepath => {
-            // log an message if not within the base path
-            if (!config.ignoreBasePath && !rxBasepath.test(req.path)) {
-                server.log('path', 'The request path does not fall within the basePath: ' + req.url);
-            }
+        promise.then(
+            rxBasepath => {
+                // log an message if not within the base path
+                if (!config.ignoreBasePath && !rxBasepath.test(req.path)) {
+                    server.log('path', 'The request path does not fall within the basePath: ' + req.url);
+                }
 
-            // execute the router
-            router.call(server, req, res, next);
-        });
+                // execute the router
+                router.call(server, req, res, next);
+            },
+            err => {
+                server.log('error', err.message, err);
+                next();
+            }
+        );
     };
 };
 
