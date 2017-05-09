@@ -145,5 +145,5 @@ exports.response = function(schema, definitions) {
 };
 
 function mapError(err) {
-    return err.message + (err.at ? '[at ' + err.at + ']' : '');
+    return err.message + (err.at ? ' [' + err.at + ']' : '');
 }
