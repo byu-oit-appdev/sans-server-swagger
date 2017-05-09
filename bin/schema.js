@@ -47,11 +47,18 @@ module.exports = Typed({
             type: Function,
             required: true
         },
-        swagger: {
-            type: String,
-            required: true,
-            pattern: /\.(?:json|yaml)$/i,
-            transform: p => path.resolve(process.cwd(), p)
-        }
+        swagger: [
+            {
+                type: String,
+                required: true,
+                pattern: /\.(?:json|yaml)$/i,
+                transform: p => path.resolve(process.cwd(), p)
+            },
+            {
+                type: Object,
+                allowNull: false,
+                required: true
+            }
+        ]
     }
 });
