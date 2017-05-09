@@ -89,7 +89,7 @@ exports.request = function(schema, definitions) {
                 if (store.hasOwnProperty(name)) {
                     const value = store[name];
                     enforcers[param.in][name].errors(value).forEach(err => {
-                        errors.push('Error in ' + param.in + (param.in === 'body' ? '' : ' for parameter: ' + name) + '. ' + err.message);
+                        errors.push('Error in ' + param.in + (param.in === 'body' ? '' : ' for parameter: ' + name) + '. ' + mapError(err));
                     });
                 }
             });
@@ -137,9 +137,13 @@ exports.response = function(schema, definitions) {
             if (enforcers[code]) {
                 const errors = enforcers[code]
                     .errors(value)
-                    .map(err => err.message);
+                    .map(mapError);
                 if (errors.length > 0) return 'Response did not meet swagger requirements:\n  ' + errors.join('\n  ');
             }
         }
     }
 };
+
+function mapError(err) {
+    return err.message + (err.at ? '[at ' + err.at + ']' : '');
+}
