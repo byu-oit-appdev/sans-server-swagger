@@ -19,6 +19,7 @@
 
 const middleware = require('./bin/middleware');
 middleware.testSwaggerResponseExamples = require('./bin/test-examples');
+middleware.Enforcer = require('swagger-enforcer');
 
 module.exports = middleware;
 
