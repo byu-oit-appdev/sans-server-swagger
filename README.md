@@ -238,3 +238,40 @@ Swagger.testSwaggerResponseExamples.getTests('./swagger.yaml', { flatten: true }
         })
     });
 ```
+
+## Swagger Enforcer
+
+This package uses the [swagger-enforcer](https://www.npmjs.com/package/swagger-enforcer) package to perform validation. The swagger-enforcer has been exposed through this package. This is especially useful for its [type conversion](https://www.npmjs.com/package/swagger-enforcer#enforcerto) and [parameter injection](https://www.npmjs.com/package/swagger-enforcer#enforcerinjectparameters) tools.
+
+```js
+const Swagger = require('sans-server-swagger');
+const Enforcer = Swagger.Enforcer;
+
+const date = Enforcer.to.date(new Date());
+console.log(date);      // a string of "2000-01-01" (or whatever the date actually is)
+```
+
+### Response Enforcement
+
+You can enforce a response while it is being built by using the swagger-enforcer. As of now the enforced rules are the [defaults](https://www.npmjs.com/package/swagger-enforcer#enforcement-options).
+ 
+To enforce a response while building you only need to specify which response you'll be building. Below you can see an implemented controller method that uses the building enforcement:
+
+```js
+exports.foo = function(req, res) {
+    const result = res.enforce(200);    // 200 - the response code to enforce
+    result.firstName = 'Bob';           // an error will be thrown here if this is an invalid mutation of the result
+    result.lastName = 'Smith';          // an error will be thrown here if this is an invalid mutation of the result
+    res.send(result);
+};
+```
+
+Additionally you can optionally set the initial value:
+
+```js
+exports.foo = function(req, res) {
+    const result = res.enforce(200, { firstName: 'Bob' });  // will throw an error here if initial value is invalid
+    result.lastName = 'Smith';          // an error will be thrown here if this is an invalid mutation of the result
+    res.send(result);
+};
+```
