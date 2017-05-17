@@ -43,9 +43,6 @@ module.exports = function (configuration) {
             const swaggerString = JSON.stringify(swagger);
             if (!swagger.definitions) swagger.definitions = {};
 
-            // normalize required properties
-            transitionRequiredToProperties(swagger);
-
             // set global controller
             const globalController = swagger.hasOwnProperty('x-controller') ?
                 loadController(config.controllers, swagger['x-controller'], config.development) :
@@ -309,24 +306,5 @@ function loadController(controllersDirectory, controller, development) {
         } else {
             throw e;
         }
-    }
-}
-
-/**
- * Move required array parameters into object properties recursively.
- * @param schema
- */
-function transitionRequiredToProperties(schema) {
-    if (Array.isArray(schema)) {
-        schema.forEach(item => transitionRequiredToProperties(item));
-    } else if (schema && typeof schema === 'object') {
-        if (Array.isArray(schema.required) && schema.properties && typeof schema.properties === 'object') {
-            schema.required.forEach(key => {
-                if (schema.properties.hasOwnProperty(key) && schema.properties[key] && typeof schema.properties[key] === 'object') {
-                    schema.properties[key].required = true;
-                }
-            });
-        }
-        Object.keys(schema).forEach(key => transitionRequiredToProperties(schema[key]));
     }
 }
