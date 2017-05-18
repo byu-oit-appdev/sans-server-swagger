@@ -125,14 +125,16 @@ exports.response = function(schema, definitions) {
                     enforce: Enforcer(resSchema, definitions, { useDefaults: true }),
                     validate: Enforcer(resSchema, definitions, { useDefaults: true, enforce: true })
                 };
+            } else {
+                enforcers[key] = null;
             }
-
         }
     }
 
     return {
         enforce: function(code, initial) {
             if (!enforcers.hasOwnProperty(code)) throw Error('Invalid swagger response code: ' + code);
+            if (!enforcers[code]) throw Error('No schema to enforce.');
             return arguments.length > 1 ? enforcers[code].enforce.enforce(initial) : enforcers[code].enforce();
         },
 
