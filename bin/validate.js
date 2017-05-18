@@ -113,7 +113,6 @@ exports.request = function(schema, definitions) {
  */
 exports.response = function(schema, definitions) {
     const enforcers = {};
-    const options = { useDefaults: true, enforce: true };
 
     if (schema.responses) {
         const keys = Object.keys(schema.responses);
@@ -121,14 +120,20 @@ exports.response = function(schema, definitions) {
         for (let i = 0; i < length; i++) {
             const key = keys[i];
             const resSchema = schema.responses[key].schema;
-            enforcers[key] = resSchema ? Enforcer(resSchema, definitions, options) : null;
+            if (resSchema) {
+                enforcers[key] = {
+                    enforce: Enforcer(resSchema, definitions, { useDefaults: true }),
+                    validate: Enforcer(resSchema, definitions, { useDefaults: true, enforce: true })
+                };
+            }
+
         }
     }
 
     return {
         enforce: function(code, initial) {
             if (!enforcers.hasOwnProperty(code)) throw Error('Invalid swagger response code: ' + code);
-            return arguments.length > 1 ? enforcers[code].enforce(initial) : enforcers[code].enforce();
+            return arguments.length > 1 ? enforcers[code].enforce.enforce(initial) : enforcers[code].enforce();
         },
 
         validate: function(code, value) {
@@ -136,6 +141,7 @@ exports.response = function(schema, definitions) {
 
             if (enforcers[code]) {
                 const errors = enforcers[code]
+                    .validate
                     .errors(value)
                     .map(mapError);
                 if (errors.length > 0) return 'Response did not meet swagger requirements:\n  ' + errors.join('\n  ');
