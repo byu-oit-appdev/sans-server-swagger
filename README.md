@@ -6,7 +6,7 @@ Sans-Server middleware that uses swagger documents to define routes, validate re
 
 The following example will produce mock responses using response examples for any incoming requests. You can add actual implementations through [controllers](#swagger-document-controllers).
 
-A complete example can be found in the [example directory](https://github.com/byu-oit-appdev/sans-server-swagger/tree/master/example).
+A complete example can be found in the [example directory](https://github.com/byu-oit/sans-server-swagger/tree/master/example).
 
 ```js
 const Server = require('sans-server');
@@ -55,7 +55,7 @@ The swagger middleware is generated using a configuration with the following pro
 
 Out of the box and using the example above this middleware will produce mock responses. To write implementations for your swagger endpoints you needs to set up controllers.
 
-You can look at the [example directory](https://github.com/byu-oit-appdev/sans-server-swagger/tree/master/example) contained within this project for details.
+You can look at the [example directory](https://github.com/byu-oit/sans-server-swagger/tree/master/example) contained within this project for details.
 
 In summary:
 

@@ -14,8 +14,8 @@ ddd:
   ubiquitous_language_url: 
   context_map_url: 
 links:
-  system_documentation_url: https://github.com/byu-oit-appdev/sans-server-swagger
-  source_repo_url: https://github.com/byu-oit-appdev/sans-server-swagger
+  system_documentation_url: https://github.com/byu-oit/sans-server-swagger
+  source_repo_url: https://github.com/byu-oit/sans-server-swagger
   swagger_urls:
 microservice: False
 technologies_used:
@@ -23,7 +23,7 @@ technologies_used:
 stages:
   production:
     urls:
-      product_page: https://github.com/byu-oit-appdev/sans-server-swagger
+      product_page: https://github.com/byu-oit/sans-server-swagger
       physical_url: 
       virtual_url: 
     hosting_location: 

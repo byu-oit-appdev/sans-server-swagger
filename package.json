@@ -36,10 +36,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/byu-oit-appdev/sans-server-swagger.git"
+    "url": "git+https://github.com/byu-oit/sans-server-swagger.git"
   },
   "bugs": {
-    "url": "https://github.com/byu-oit-appdev/sans-server-swagger/issues"
+    "url": "https://github.com/byu-oit/sans-server-swagger/issues"
   },
-  "homepage": "https://github.com/byu-oit-appdev/sans-server-swagger#readme"
+  "homepage": "https://github.com/byu-oit/sans-server-swagger#readme"
 }
