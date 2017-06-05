@@ -277,15 +277,43 @@ function executeController(server, controller, req, res) {
  */
 function findMatchingExample(examples, accept) {
     const keys = examples ? Object.keys(examples) : [];
-    if (keys.length === 0) return undefined;
+    const typesLength = keys.length;
+
+    // quick result
+    if (typesLength === 0) return undefined;
     if (accept === '*') return keys[0];
 
-    const parts = accept.split('/');
-    const match = keys.filter(k => {
-        const ar = k.split('/');
-        return (parts[0] === '*' || parts[0] === ar[0]) && (parts[1] === '*' || parts[1] === ar[1]);
+    // determine what types and subtypes are supported by examples
+    const types = keys.map(key => {
+        const ar = key.split('/');
+        return {
+            type: ar[0] || '*',
+            subtype: ar[1] || '*'
+        }
     });
-    return match[0];
+
+    // find all the types that the client accepts
+    const accepts = accept.split(/,\s*/);
+    const length = accepts.length;
+    for (let i = 0; i < length; i++) {
+
+        // remove variable from type and separate type and subtype
+        const item = accepts[i].split(';')[0];
+        const parts = item.split('/');
+        const a = {
+            type: parts[0] || '*',
+            subtype: parts[1] || '*'
+        };
+
+        // look for a match between types and accepts
+        for (let j = 0; j < typesLength; j++) {
+            const t = types[j];
+            if ((t.type === '*' || a.type === '*' || a.type === t.type) &&
+                (t.subtype === '*' || a.subtype === '*' || a.subtype === t.subtype)) return keys[j];
+        }
+    }
+
+    return undefined;
 }
 
 /**
