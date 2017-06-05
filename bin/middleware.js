@@ -197,12 +197,12 @@ module.exports = function (configuration) {
                                                     : examples && Object.keys(examples)[0];
 
                                             const match = findMatchingExample(examples, accept);
-                                            if (match) {
-                                                res.send(examples[match]);
+                                            if (match.type) {
+                                                res.send(examples[match.type]);
                                             } else {
                                                 server.log('mock', 'example not implemented');
                                                 responseNeedsValidation = false;
-                                                res.sendStatus(501);
+                                                res.sendStatus(match.implemented ? 501 : 406);
                                             }
                                         }
 
@@ -278,9 +278,10 @@ function executeController(server, controller, req, res) {
 function findMatchingExample(examples, accept) {
     const keys = examples ? Object.keys(examples) : [];
     const typesLength = keys.length;
+    const implemented = typesLength > 0;
 
     // quick result
-    if (typesLength === 0) return undefined;
+    if (!implemented) return { implemented: false, type: undefined };
     if (accept === '*') return keys[0];
 
     // determine what types and subtypes are supported by examples
@@ -309,11 +310,11 @@ function findMatchingExample(examples, accept) {
         for (let j = 0; j < typesLength; j++) {
             const t = types[j];
             if ((t.type === '*' || a.type === '*' || a.type === t.type) &&
-                (t.subtype === '*' || a.subtype === '*' || a.subtype === t.subtype)) return keys[j];
+                (t.subtype === '*' || a.subtype === '*' || a.subtype === t.subtype)) return { implemented: true, type: keys[j] };
         }
     }
 
-    return undefined;
+    return { implemented: implemented, type: undefined };
 }
 
 /**
