@@ -47,5 +47,5 @@ tags:
   env: prd
   app: sans-server-swagger
   team: gro:AD-Miscellaneous Information Applications
-federation_json_url: https://raw.githubusercontent.com/byu-oit-appdev/sans-server-swagger/master/.repo-meta.yml
+federation_json_url: https://raw.githubusercontent.com/byu-oit/sans-server-swagger/master/.repo-meta.yml
 
