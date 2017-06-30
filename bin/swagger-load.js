@@ -19,6 +19,8 @@ const fs                = require('fs');
 const jsonRefs          = require('json-refs');
 const yaml              = require('js-yaml');
 
+jsonRefs.clearCache();
+
 /**
  * Load the swagger file and resolve all references.
  * @param {string, object} swaggerFilePath
@@ -28,6 +30,5 @@ module.exports = function(swaggerFilePath) {
     const swagger = typeof swaggerFilePath === 'string'
         ? /\.json$/.test(swaggerFilePath) ? require(swaggerFilePath) : yaml.load(fs.readFileSync(swaggerFilePath, 'utf8'))
         : swaggerFilePath;
-
     return jsonRefs.resolveRefs(swagger).then(data => data.resolved);
 };
