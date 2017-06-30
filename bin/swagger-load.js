@@ -19,8 +19,6 @@ const fs                = require('fs');
 const jsonRefs          = require('json-refs');
 const yaml              = require('js-yaml');
 
-jsonRefs.clearCache();
-
 /**
  * Load the swagger file and resolve all references.
  * @param {string, object} swaggerFilePath
