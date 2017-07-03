@@ -28,5 +28,5 @@ module.exports = function(swaggerFilePath) {
     const swagger = typeof swaggerFilePath === 'string'
         ? /\.json$/.test(swaggerFilePath) ? require(swaggerFilePath) : yaml.load(fs.readFileSync(swaggerFilePath, 'utf8'))
         : swaggerFilePath;
-    return jsonRefs.resolveRefs(swagger, { resolveCirculars: true }).then(data => data.resolved);
+    return jsonRefs.resolveRefs(swagger).then(data => data.resolved);
 };
