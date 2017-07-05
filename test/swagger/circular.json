@@ -1,0 +1,62 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "byu-curriculum-api",
+    "description": "byu-curriculum-api",
+    "version": "v1",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  },
+  "host": "api.byu.edu",
+  "schemes": [
+    "https"
+  ],
+  "basePath": "/v1",
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/recObj": {
+      "x-controller": "recObj",
+      "get": {
+        "operationId": "getRecObj",
+        "responses": {
+          "200": {
+            "schema": {
+              "$ref": "#/definitions/recObj"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions":
+  {
+    "recObj": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "object",
+          "properties": {
+            "comments": {
+              "type": "Object",
+              "properties": {
+                "value": {
+                  "type": "string"
+                }
+              }
+            },
+            "children": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/recObj"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
