@@ -32,7 +32,8 @@ module.exports = function (configuration) {
 
     // resolve swagger json references and process swagger object
     const promise = swaggerLoad(config.swagger)
-        .then(swagger => {
+        .then(loaded => {
+            const swagger = loaded.swagger;
 
             // make sure that there is a basePath that starts with slash
             if (!swagger.hasOwnProperty('basePath')) swagger.basePath = '/';
@@ -40,7 +41,6 @@ module.exports = function (configuration) {
             const rxBasepath = new RegExp('^' + (swagger.basePath === '/' ? '' : '\\' + swagger.basePath) + '(?:\\/|\\?|$)');
 
             const swagggerErrors = checkSwagger(swagger);
-            const swaggerString = JSON.stringify(swagger);
             if (!swagger.definitions) swagger.definitions = {};
 
             // set global controller
@@ -51,7 +51,7 @@ module.exports = function (configuration) {
             // if there is to be a swagger endpoint then define that path
             if (config.endpoint) {
                 router.get(config.ignoreBasePath ? config.endpoint : swagger.basePath.replace(/\/$/, '') + config.endpoint, (req, res) => {
-                    res.send(200, swaggerString, { 'Content-Type': 'application/json' });
+                    res.send(200, loaded.content, { 'Content-Type': 'application/json' });
                 });
             }
 
@@ -178,7 +178,7 @@ module.exports = function (configuration) {
                                         // check for a mock property on the operation ID
                                         if (handler && typeof handler.mock === 'function') {
                                             server.log('mock', 'Executing mock from code.');
-                                            req.swagger = JSON.parse(swaggerString);
+                                            req.swagger = copy(swagger);
                                             executeController(server, handler.mock, req, res);
 
                                         // schema-less response mocking
@@ -208,7 +208,7 @@ module.exports = function (configuration) {
 
                                     // if there is a controller then run it
                                     } else if (handler) {
-                                        req.swagger = JSON.parse(swaggerString);
+                                        req.swagger = copy(swagger);
                                         executeController(server, handler, req, res);
 
                                     } else {
@@ -247,12 +247,39 @@ module.exports = function (configuration) {
                 router.call(server, req, res, next);
             },
             err => {
-                server.log('error', err.message, err);
+                server.log('error', err.stack, err);
                 next();
             }
         );
     };
 };
+
+/**
+ * Perform a deep copy of an object.
+ * @param {Object} obj
+ * @param {WeakMap} [map]
+ * @returns {*}
+ */
+function copy(obj, map) {
+    if (!map) map = new WeakMap();
+    if (map.has(obj)) {
+        return obj;
+    } else if (Array.isArray(obj)) {
+        const result = [];
+        obj.forEach(item => {
+            result.push(copy(item, map));
+        });
+        return result;
+    } else if (typeof obj === 'object' && obj) {
+        const result = {};
+        Object.keys(obj).forEach(key => {
+            result[key] = copy(obj[key], map);
+        });
+        return result;
+    } else {
+        return obj;
+    }
+}
 
 /**
  * Safely execute a controller.
