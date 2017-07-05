@@ -21,7 +21,7 @@ module.exports = function(swagger) {
     const errors = [];
 
     // check for unresolved $ref errors
-    const refErrors = findRefs([], swagger, 'root');
+    const refErrors = findRefs([], swagger, 'root', new WeakMap());
     if (refErrors.length > 0) errors.push('One or more $ref could not be resolved:\n    ' + refErrors.join('\n    '));
 
     // check that if any parameters are in formData that consumes allows application/x-www-form-urlencoded or multipart/form-data
@@ -47,15 +47,19 @@ module.exports = function(swagger) {
     return errors;
 };
 
-function findRefs(errors, obj, chain) {
-    if (Array.isArray(obj)) {
+function findRefs(errors, obj, chain, map) {
+    if (map.has(obj)) {
+        return errors;
+    } else if (Array.isArray(obj)) {
+        map.set(obj, true);
         obj.forEach((o, i) => {
-            findRefs(errors, o, chain + '/' + i);
+            findRefs(errors, o, chain + '/' + i, map);
         });
     } else if (obj && typeof obj === 'object') {
+        map.set(obj, true);
         if (obj.hasOwnProperty('$ref')) errors.push(chain + '/$ref');
         Object.keys(obj).forEach(k => {
-            findRefs(errors, obj[k], chain + '/' + k);
+            findRefs(errors, obj[k], chain + '/' + k, map);
         });
     }
     return errors;
