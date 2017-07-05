@@ -202,7 +202,7 @@ module.exports = function (configuration) {
                                             } else {
                                                 server.log('mock', 'example not implemented');
                                                 responseNeedsValidation = false;
-                                                res.sendStatus(match.implemented ? 501 : 406);
+                                                res.sendStatus(match.implemented || !examples || Object.keys(examples).length === 0 ? 501 : 406);
                                             }
                                         }
 
