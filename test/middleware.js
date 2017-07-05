@@ -15,6 +15,7 @@
  *    limitations under the License.
  **/
 'use strict';
+const fs                = require('fs');
 const expect            = require('chai').expect;
 const path              = require('path');
 const Router            = require('sans-server-router');
@@ -150,7 +151,7 @@ describe('middleware', () => {
             return server.request({ method: 'GET', path: '/swagger' })
                 .then(res => {
                     const body = JSON.parse(res.body);
-                    expect(body).to.deep.equal({ basePath: '/', paths: helloPath });
+                    expect(body).to.deep.equal({ paths: helloPath });
                 });
         });
 
@@ -164,7 +165,7 @@ describe('middleware', () => {
             return server.request({ method: 'GET', path: '/abc' })
                 .then(res => {
                     const body = JSON.parse(res.body);
-                    expect(body).to.deep.equal({ basePath: '/', paths: helloPath });
+                    expect(body).to.deep.equal({ paths: helloPath });
                 });
         });
 
@@ -223,7 +224,7 @@ describe('middleware', () => {
                 in: 'formData',
                 type: 'string'
             }];
-            const server = makeServer({ paths: paths });
+            const server = makeServer({ swagger:{ paths: paths } });
             return server
                 .request({
                     path: '/',
@@ -248,6 +249,12 @@ function makeServer(config) {
         ignoreBasePath: false,
         router: Router({ paramFormat: 'handlebar' })
     }, config);
+    if (typeof configuration.swagger === 'object') {
+        const json = JSON.stringify(configuration.swagger);
+        const filePath = __dirname + '/swagger/temp.json';
+        fs.writeFileSync(filePath, json);
+        configuration.swagger = filePath;
+    }
     const middleware = Swagger(configuration);
     server.use(middleware);
     return server;
