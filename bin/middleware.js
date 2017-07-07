@@ -17,6 +17,7 @@
 'use strict';
 const acceptedMethods   = require('./accept-methods');
 const checkSwagger      = require('./check-swagger');
+const copy              = require('./copy');
 const deserialize       = require('./deserialize');
 const Enforcer          = require('swagger-enforcer');
 const normalizeRequest  = require('./normalize-request');
@@ -253,33 +254,6 @@ module.exports = function (configuration) {
         );
     };
 };
-
-/**
- * Perform a deep copy of an object.
- * @param {Object} obj
- * @param {WeakMap} [map]
- * @returns {*}
- */
-function copy(obj, map) {
-    if (!map) map = new WeakMap();
-    if (map.has(obj)) {
-        return obj;
-    } else if (Array.isArray(obj)) {
-        const result = [];
-        obj.forEach(item => {
-            result.push(copy(item, map));
-        });
-        return result;
-    } else if (typeof obj === 'object' && obj) {
-        const result = {};
-        Object.keys(obj).forEach(key => {
-            result[key] = copy(obj[key], map);
-        });
-        return result;
-    } else {
-        return obj;
-    }
-}
 
 /**
  * Safely execute a controller.
