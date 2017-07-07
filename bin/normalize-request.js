@@ -15,6 +15,7 @@
  *    limitations under the License.
  **/
 'use strict';
+const copy              = require('./copy');
 
 const rxInteger = /^\d+$/;
 const rxNumber = /^\d+(?:\.\d+)?$/;
@@ -35,7 +36,7 @@ module.exports = function (server, req, parameters) {
                 const bodyHasDefault = param.schema && param.schema.hasOwnProperty('default');
                 if (typeof req.body === 'undefined' && bodyHasDefault) {
                     req.body = typeof param.schema.default === 'object'
-                        ? JSON.parse(JSON.stringify(param.schema.default))
+                        ? copy(param.schema.default)
                         : param.schema.default;
                     server.log('req-params', 'Using default value for parameter ' + name);
                 }
