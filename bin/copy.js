@@ -29,15 +29,17 @@ module.exports = function(obj) {
  */
 function copy(obj, map) {
     if (map.has(obj)) {
-        return obj;
+        return map.get(obj);
     } else if (Array.isArray(obj)) {
         const result = [];
+        map.set(obj, result);
         obj.forEach(item => {
             result.push(copy(item, map));
         });
         return result;
     } else if (typeof obj === 'object' && obj) {
         const result = {};
+        map.set(obj, result);
         Object.keys(obj).forEach(key => {
             result[key] = copy(obj[key], map);
         });
