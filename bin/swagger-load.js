@@ -16,7 +16,7 @@
  **/
 'use strict';
 const fs                = require('fs');
-const jsonRefs          = require('json-refs');
+const jsonRefs          = require('json-schema-ref-parser');
 const yaml              = require('js-yaml');
 
 /**
@@ -30,11 +30,11 @@ module.exports = function(swaggerFilePath) {
         ? JSON.parse(content)
         : yaml.load(content);
     return jsonRefs
-        .resolveRefs(swagger, { resolveCirculars: true, location: swaggerFilePath })
-        .then(data => {
+        .dereference(swagger, { dereference: { onErrorThrow: false } })
+        .then(schema => {
             return {
                 content: content,
-                swagger: data.resolved
+                swagger: schema
             }
         });
 };
