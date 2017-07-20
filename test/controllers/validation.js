@@ -38,4 +38,8 @@ exports.invalidResponse = (req, res) => res.send(invalid);
 exports.invalidResponseMocked = (req, res) => res.send(invalid);
 exports.invalidResponseMocked.mock = (req, res) => res.send(invalid);
 
+exports.defaultResponse = (req, res) => {
+    res.status(500).send({ code: 500, message: 'Oops' });
+};
+
 exports.inputValidation = (req, res) => res.send('');

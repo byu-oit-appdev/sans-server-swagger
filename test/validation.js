@@ -57,6 +57,14 @@ describe('validation', () => {
         api = server;
     });
 
+    it('default', () => {
+        return api.request('/v1/default-response')
+            .then(res => {
+                expect(res.body).to.equal(JSON.stringify({ code: 500, message: 'Oops' }));
+            });
+
+    });
+
     describe('valid response', () => {
 
         afterEach(() => console.log('\n'));

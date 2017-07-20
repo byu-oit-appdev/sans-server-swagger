@@ -78,6 +78,24 @@ paths:
           description: Error
           schema:
             $ref: '#/definitions/Error'
+
+  "/default-response":
+    get:
+      operationId: defaultResponse
+      responses:
+        '200':
+          description: Response
+          examples:
+            application/json:
+            - id: 123
+              name: Sparky
+              tag: Dog
+          schema:
+            "$ref": "#/definitions/Pets"
+        default:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
   "/input-validation":
     post:
       operationId: inputValidation
