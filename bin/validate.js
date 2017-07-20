@@ -139,7 +139,13 @@ exports.response = function(schema, definitions) {
         },
 
         validate: function(code, value) {
-            if (!enforcers.hasOwnProperty(code)) return 'Invalid swagger response code: ' + code;
+            if (!enforcers.hasOwnProperty(code)) {
+                if (enforcers.hasOwnProperty('default')) {
+                    code = 'default';
+                } else {
+                    return 'Invalid swagger response code: ' + code;
+                }
+            }
 
             if (enforcers[code]) {
                 const errors = enforcers[code]
