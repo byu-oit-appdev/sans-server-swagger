@@ -138,14 +138,14 @@ exports.response = function(schema, definitions) {
             return arguments.length > 1 ? enforcers[code].enforce.enforce(initial) : enforcers[code].enforce.enforce();
         },
 
+        hasResponseStatus: function(code, checkDefault) {
+            return enforcers.hasOwnProperty(code) ||
+                (checkDefault && enforcers.hasOwnProperty('default'));
+        },
+
         validate: function(code, value) {
-            if (!enforcers.hasOwnProperty(code)) {
-                if (enforcers.hasOwnProperty('default')) {
-                    code = 'default';
-                } else {
-                    return 'Invalid swagger response code: ' + code;
-                }
-            }
+            if (!this.hasResponseStatus(code, true)) return 'Invalid swagger response code: ' + code;
+            if (!this.hasResponseStatus(code, false)) code = 'default';
 
             if (enforcers[code]) {
                 const errors = enforcers[code]
