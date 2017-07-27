@@ -30,6 +30,10 @@ module.exports = Typed({
             type: String,
             default: '/swagger'
         },
+        exception: {
+            type: Function,
+            default: function(res, state) {}
+        },
         development: {
             type: Boolean,
             default: false
@@ -42,10 +46,6 @@ module.exports = Typed({
             type: String,
             default: 'mock',
             minLength: 1
-        },
-        router: {
-            type: Function,
-            required: true
         },
         swagger: [
             {
