@@ -20,8 +20,10 @@ const checkSwagger      = require('./check-swagger');
 const copy              = require('./copy');
 const deserialize       = require('./deserialize');
 const Enforcer          = require('swagger-enforcer');
+const Exception         = require('./exception');
 const normalizeRequest  = require('./normalize-request');
 const path              = require('path');
+const Router            = require('sans-server-router');
 const schema            = require('./schema');
 const swaggerLoad       = require('./swagger-load');
 const validate          = require('./validate');
@@ -29,7 +31,27 @@ const validate          = require('./validate');
 module.exports = function (configuration) {
     const config = schema.normalize(configuration);
     const mockQP = config.mockQueryParameter;
-    const router = config.router;
+    const router = Router({ paramFormat: 'handlebar' });
+
+    // produce a wrapper around the exception logic
+    const exceptionFnParadigmCb = config.exception.length === 3;
+    function exceptionRunner(res, state) {
+        if (state.statusCode !== res.body.code) res.status(res.body.code);
+        if (exceptionFnParadigmCb) {
+            return new Promise(function(resolve, reject) {
+                try {
+                    config.exception(res, state, function(err) {
+                        if (err) return reject(err);
+                        resolve();
+                    });
+                } catch (e) {
+                    reject(e);
+                }
+            });
+        } else {
+            return config.exception(res, state);
+        }
+    }
 
     // resolve swagger json references and process swagger object
     const promise = swaggerLoad(config.swagger)
@@ -41,7 +63,7 @@ module.exports = function (configuration) {
             swagger.basePath = '/' + swagger.basePath.replace(/^\//, '').replace(/\/$/, '');
             const rxBasepath = new RegExp('^' + (swagger.basePath === '/' ? '' : '\\' + swagger.basePath) + '(?:\\/|\\?|$)');
 
-            const swagggerErrors = checkSwagger(swagger);
+            const swaggerErrors = checkSwagger(swagger);
             if (!swagger.definitions) swagger.definitions = {};
 
             // set global controller
@@ -119,7 +141,7 @@ module.exports = function (configuration) {
 
                                 // report any path errors
                                 if (pathErrors.length > 0) {
-                                    swagggerErrors.push('Path has one or more errors: ' +
+                                    swaggerErrors.push('Path has one or more errors: ' +
                                         method.toUpperCase() + ' ' +
                                         path + '\n    ' + pathErrors.join('\n    '));
                                 }
@@ -135,7 +157,28 @@ module.exports = function (configuration) {
                                 //////////////////////////////
                                 router[method](fullPath, function(req, res) {
                                     const server = this;
-                                    let responseNeedsValidation = true;
+                                    const statusMessage = server.constructor.Response.status;
+
+                                    res.hook(function(state) {
+                                        const code = state.statusCode;
+
+                                        if (state.body instanceof Exception) {
+                                            return exceptionRunner(res, state);
+
+                                        } else if (!validateResponse.hasResponseStatus(code)) {
+                                            server.log('response-error', 'Response code not defined: ' + code);
+                                            const err = Exception(500, 'Invalid swagger response code: ' + code, 500);
+                                            return exceptionRunner(res, state);
+
+                                        } else {
+                                            const errorMessage = validateResponse.validate(code, state.body);
+                                            if (errorMessage) {
+                                                server.log('response-error', 'Invalid response.');
+                                                const err = Exception(500, 'Invalid swagger response code: ' + code, 500);
+                                                return exceptionRunner(res, state);
+                                            }
+                                        }
+                                    });
 
                                     // deserialize the request parameters
                                     if (Array.isArray(methodSchema.parameters)) normalizeRequest(server, req, methodSchema.parameters);
@@ -143,25 +186,13 @@ module.exports = function (configuration) {
                                     // validate the request
                                     const err = validateRequest(req);
                                     if (err) {
-                                        responseNeedsValidation = false;
                                         server.log('request-error', 'Invalid request.');
-                                        res.status(400);
-                                        return res.send(err);
+                                        res.send(Exception(400, err));
+                                        return;
                                     }
 
                                     // add the deserialize object to the request
                                     req.deserialize = deserialize;
-
-                                    // add a hook to validate the response before send
-                                    res.hook(function(state) {
-                                        if (responseNeedsValidation && !(state.body instanceof Error)) {
-                                            const err = validateResponse.validate(state.statusCode, state.body);
-                                            if (err) {
-                                                server.log('response-error', 'Invalid response.');
-                                                this.body(Error(err));
-                                            }
-                                        }
-                                    });
 
                                     // add a build method to the request object
                                     res.enforce = validateResponse.enforce;
@@ -179,7 +210,7 @@ module.exports = function (configuration) {
                                         // check for a mock property on the operation ID
                                         if (handler && typeof handler.mock === 'function') {
                                             server.log('mock', 'Executing mock from code.');
-                                            req.swagger = copy(swagger);
+                                            req.swagger = copy(swagger);                            // TODO: figure out how to present route specific swagger
                                             executeController(server, handler.mock, req, res);
 
                                         // schema-less response mocking
@@ -201,20 +232,19 @@ module.exports = function (configuration) {
                                             if (match.type) {
                                                 res.send(examples[match.type]);
                                             } else {
-                                                server.log('mock', 'example not implemented');
-                                                responseNeedsValidation = false;
-                                                res.sendStatus(match.implemented || !examples || Object.keys(examples).length === 0 ? 501 : 406);
+                                                server.log('mock', 'Example not implemented');
+                                                const status = match.implemented || !examples || Object.keys(examples).length === 0 ? 501 : 406;
+                                                res.send(Exception(status, statusMessage[status]));
                                             }
                                         }
 
                                     // if there is a controller then run it
                                     } else if (handler) {
-                                        req.swagger = copy(swagger);
+                                        req.swagger = copy(swagger);                            // TODO: figure out how to present route specific swagger
                                         executeController(server, handler, req, res);
 
                                     } else {
-                                        responseNeedsValidation = false;
-                                        res.sendStatus(501);
+                                        res.send(Exception(501, statusMessage[501]));
                                     }
                                 });
                             });
@@ -222,8 +252,8 @@ module.exports = function (configuration) {
             }
 
             // if there are swagger errors then exit the process
-            if (swagggerErrors.length > 0) {
-                console.error('One or more errors found in the swagger document:\n  ' + swagggerErrors.join('\n  '));
+            if (swaggerErrors.length > 0) {
+                console.error('One or more errors found in the swagger document:\n  ' + swaggerErrors.join('\n  '));
             }
 
             return rxBasepath;
@@ -267,6 +297,39 @@ function executeController(server, controller, req, res) {
         controller.call(server, req, res);
     } catch (err) {
         res.send(err);
+    }
+}
+
+/**
+ * Execute the default response handler in either promise or callback paradigm
+ * @param {Function} handler
+ * @param {Response} res
+ * @param {Object} state
+ */
+function executeErrorHandler(handler, res, state) {
+    const deferred = {};
+    deferred.promise = new Promise(function(resolve, reject) {
+        deferred.resolve = resolve;
+        deferred.reject = reject;
+    });
+
+    if (handler.length > 1) {
+        try {
+            const callback = function (err) {
+                if (err) return deferred.reject(err);
+                deferred.resolve();
+            };
+            handler.call(res, state, callback);
+        } catch (err) {
+            deferred.reject(err);
+        }
+    } else {
+        try {
+            Promise.resolve(handler.call(res, state))
+                .then(deferred.resolve, deferred.reject);
+        } catch (err) {
+            deferred.reject(err);
+        }
     }
 }
 
