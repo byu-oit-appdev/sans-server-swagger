@@ -20,7 +20,12 @@ const server = Server();
 const swaggerMiddleware = Swagger({
     controllers: './controllers',
     development: true,
-    router: Router({ paramFormat: 'handlebar' }),
+    exception: function(res, state) {
+        res.body({
+            status: 200,
+            message: ''
+        });
+    },
     swagger: './swagger.json'
 });
 
@@ -43,11 +48,11 @@ The swagger middleware is generated using a configuration with the following pro
 
 - *development* - [OPTIONAL] If true then mocks will automatically be produced from examples when a controller does not exist. Additionally not all controllers must exist. If set to false then all controller implementations must exist. Defaults to `false`.
 
+- *error* - [OPTIONAL] A function that defines the response body to use in case of error.
+
 - *ignoreBasePath* - [OPTIONAL] If true then the swagger base path will not be used in the routes. Defaults to `false`.
 
 - *mockQueryParameter* - [OPTIONAL] The query parameter to look for when a response should be manually mocked. Defaults to `mock`.
-
-- *router*  - [REQUIRED] A [sans-server-router](https://www.npmjs.com/package/sans-server-router) instance that must be configured to use `'handlebar'` path parameters. See the [Example](#example) above.
 
 - *swagger* - [REQUIRED] The swagger file that defines the services. This can be either a json or a yaml file.
 
