@@ -138,14 +138,12 @@ exports.response = function(schema, definitions) {
             return arguments.length > 1 ? enforcers[code].enforce.enforce(initial) : enforcers[code].enforce.enforce();
         },
 
-        hasResponseStatus: function(code, checkDefault) {
-            return enforcers.hasOwnProperty(code) ||
-                (checkDefault && enforcers.hasOwnProperty('default'));
+        hasResponseStatus: function(code) {
+            return objectHasOneOf(enforcers, arguments);
         },
 
         validate: function(code, value) {
-            if (!this.hasResponseStatus(code, true)) return 'Invalid swagger response code: ' + code;
-            if (!this.hasResponseStatus(code, false)) code = 'default';
+            if (!this.hasResponseStatus(code)) return 'Invalid swagger response code: ' + code;
 
             if (enforcers[code]) {
                 const errors = enforcers[code]
@@ -160,4 +158,9 @@ exports.response = function(schema, definitions) {
 
 function mapError(err) {
     return err.message + (err.at ? ' [' + err.at + ']' : '');
+}
+
+function objectHasOneOf(obj, keys, index) {
+    if (obj.hasOwnProperty(keys[index])) return true;
+    return keys.length > index + 1 ? objectHasOneOf(obj, keys, index + 1) : false;
 }
