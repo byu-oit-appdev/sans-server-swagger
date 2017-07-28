@@ -36,11 +36,12 @@ module.exports = function (configuration) {
     // produce a wrapper around the exception logic
     const exceptionFnParadigmCb = config.exception.length === 3;
     function exceptionRunner(res, state) {
-        if (state.statusCode !== res.body.code) res.status(res.body.code);
+        if (state.statusCode !== state.body.code) res.status(state.body.code);
+        res.body(state.body.message);
         if (exceptionFnParadigmCb) {
             return new Promise(function(resolve, reject) {
                 try {
-                    config.exception(res, state, function(err) {
+                    config.exception(res, res.state, function(err) {
                         if (err) return reject(err);
                         resolve();
                     });
@@ -49,7 +50,7 @@ module.exports = function (configuration) {
                 }
             });
         } else {
-            return config.exception(res, state);
+            return config.exception(res, res.state);
         }
     }
 
@@ -167,15 +168,17 @@ module.exports = function (configuration) {
 
                                         } else if (!validateResponse.hasResponseStatus(code)) {
                                             server.log('response-error', 'Response code not defined: ' + code);
-                                            const err = Exception(500, 'Invalid swagger response code: ' + code, 500);
-                                            return exceptionRunner(res, state);
+                                            const err = Exception(500, 'Invalid swagger response code: ' + code);
+                                            res.body(err);
+                                            return exceptionRunner(res, res.state);
 
                                         } else {
                                             const errorMessage = validateResponse.validate(code, state.body);
                                             if (errorMessage) {
                                                 server.log('response-error', 'Invalid response.');
-                                                const err = Exception(500, 'Invalid swagger response code: ' + code, 500);
-                                                return exceptionRunner(res, state);
+                                                const err = Exception(500, 'Invalid swagger response code: ' + code);
+                                                res.body(err);
+                                                return exceptionRunner(res, res.state);
                                             }
                                         }
                                     });
