@@ -139,7 +139,7 @@ exports.response = function(schema, definitions) {
         },
 
         hasResponseStatus: function(code) {
-            return objectHasOneOf(enforcers, arguments);
+            return objectHasOneOf(enforcers, arguments, 0);
         },
 
         validate: function(code, value) {
