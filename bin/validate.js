@@ -31,12 +31,12 @@ exports.request = function(schema, definitions) {
         path: {},
         query: {}
     };
-    const options = { useDefaults: true, enforce: true };
     const acceptsParameters = Array.isArray(schema.parameters);
 
     // build an enforcer for each possible input
     if (acceptsParameters) {
         schema.parameters.forEach(param => {
+            const options = { useDefaults: true, enforce: true };
             const name = param.name;
             switch (param.in) {
                 case 'body':
