@@ -50,11 +50,25 @@ describe('validation', () => {
             development: true,
             ignoreBasePath: false,
             router: Router({ paramFormat: 'handlebar' }),
-            swagger: path.resolve(__dirname, './swagger/validation.yaml')
+            swagger: path.resolve(__dirname, './swagger/validation.yaml'),
+            exception: function(res, state) {
+                res.body({
+                    code: state.statusCode,
+                    message: state.body
+                });
+            }
         });
 
         server.use(middleware);
         api = server;
+    });
+
+    it('exception', () => {
+        return api.request('/v1/default-response')
+            .then(res => {
+                expect(res.body).to.equal(JSON.stringify({ code: 500, message: 'Invalid swagger response code: 500' }));
+            });
+
     });
 
     describe('valid response', () => {
