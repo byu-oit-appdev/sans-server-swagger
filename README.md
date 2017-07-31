@@ -22,8 +22,8 @@ const swaggerMiddleware = Swagger({
     development: true,
     exception: function(res, state) {
         res.body({
-            status: 200,
-            message: ''
+            status: state.statusCode,
+            message: state.body
         });
     },
     swagger: './swagger.json'
@@ -48,7 +48,9 @@ The swagger middleware is generated using a configuration with the following pro
 
 - *development* - [OPTIONAL] If true then mocks will automatically be produced from examples when a controller does not exist. Additionally not all controllers must exist. If set to false then all controller implementations must exist. Defaults to `false`.
 
-- *error* - [OPTIONAL] A function that defines the response body to use in case of error.
+- *exception* - [OPTIONAL] A function that will get called if the middleware is unable to provide an expected response. This function will receive two parameters: 1) res - the response object, and 2) state - the current response state data. Use the response object to make any modifications to the response before it is returned.
+
+    This function will be called when 1) the response does not meet the response schema defined by swagger, 2) the response uses a status code that is not defined by swagger, 3) the request has invalid input, and 4) when a response is not implemented.
 
 - *ignoreBasePath* - [OPTIONAL] If true then the swagger base path will not be used in the routes. Defaults to `false`.
 
