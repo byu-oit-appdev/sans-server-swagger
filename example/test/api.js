@@ -178,13 +178,6 @@ describe('api', () => {
             });
     });
 
-    it('405 for bad method', () => {
-        return server.request({ method: 'PUT', path: '/v1/pets' })
-            .then(res => {
-                expect(res.statusCode).to.equal(405);
-            });
-    });
-
     it('500 for bad response', () => {
         return server.request({ method: 'GET', path: '/v1/pets/123' })
             .then(res => {
