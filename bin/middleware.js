@@ -213,7 +213,7 @@ module.exports = function (configuration) {
                                         // check for a mock property on the operation ID
                                         if (handler && typeof handler.mock === 'function') {
                                             server.log('mock', 'Executing mock from code.');
-                                            req.swagger = copy(swagger);                            // TODO: figure out how to present route specific swagger
+                                            req.swagger = copy(methodSchema);
                                             executeController(server, handler.mock, req, res);
 
                                         // schema-less response mocking
