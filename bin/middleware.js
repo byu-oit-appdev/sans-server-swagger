@@ -175,8 +175,8 @@ module.exports = function (configuration) {
                                         } else {
                                             const errorMessage = validateResponse.validate(code, state.body);
                                             if (errorMessage) {
-                                                server.log('response-error', 'Invalid response.');
-                                                const err = Exception(500, 'Invalid swagger response code: ' + code);
+                                                server.log('response-error', errorMessage.replace(/\n/g, '\n    '));
+                                                const err = Exception(500, 'Internal Server Error');
                                                 res.body(err);
                                                 return exceptionRunner(res, res.state);
                                             }
@@ -189,7 +189,7 @@ module.exports = function (configuration) {
                                     // validate the request
                                     const err = validateRequest(req);
                                     if (err) {
-                                        server.log('request-error', 'Invalid request.');
+                                        server.log('request-error', err.replace(/\n/g, '\n    '));
                                         res.send(Exception(400, err));
                                         return;
                                     }

@@ -89,7 +89,7 @@ exports.request = function(schema, definitions) {
                 if (store.hasOwnProperty(name)) {
                     const value = store[name];
                     enforcers[param.in][name].errors(value).forEach(err => {
-                        errors.push('Error in ' + param.in + (param.in === 'body' ? '' : ' for parameter: ' + name) + '. ' + mapError(err));
+                        errors.push('Error in ' + param.in + (param.in === 'body' ? '' : ' for parameter: ' + name) + '. ' + err.message);
                     });
                 }
             });
@@ -148,17 +148,12 @@ exports.response = function(schema, definitions) {
             if (enforcers[code]) {
                 const errors = enforcers[code]
                     .validate
-                    .errors(value)
-                    .map(mapError);
+                    .errors(value);
                 if (errors.length > 0) return 'Response did not meet swagger requirements:\n  ' + errors.join('\n  ');
             }
         }
     }
 };
-
-function mapError(err) {
-    return err.message + (err.at ? ' [' + err.at + ']' : '');
-}
 
 function objectHasOneOf(obj, keys, index) {
     if (obj.hasOwnProperty(keys[index])) return true;
