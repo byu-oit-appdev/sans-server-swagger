@@ -90,6 +90,10 @@ paths:
       - pets
       parameters:
       - "$ref": "#/parameters/mock"
+      - name: invalidBody
+        in: query
+        description: Whether to return an invalid body
+        type: boolean
       - name: petId
         in: path
         required: true

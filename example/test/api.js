@@ -178,8 +178,15 @@ describe('api', () => {
             });
     });
 
-    it('500 for bad response', () => {
+    it('500 for bad response code', () => {
         return server.request({ method: 'GET', path: '/v1/pets/123' })
+            .then(res => {
+                expect(res.statusCode).to.equal(500);
+            });
+    });
+
+    it('500 for invalid response body', () => {
+        return server.request({ method: 'GET', path: '/v1/pets/123', query: { invalidBody: true } })
             .then(res => {
                 expect(res.statusCode).to.equal(500);
             });

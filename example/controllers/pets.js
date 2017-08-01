@@ -43,7 +43,15 @@ exports.createPets = function(req, res) {
 
 // until this implementation is complete we can have it call the custom mock
 exports.showPetById = function(req, res) {
-    exports.showPetById.mock(req, res);     // call the mock
+    if (req.query.invalidBody) {
+        res.send({
+            id: req.params.petId,
+            name: 1234,
+            tag: 'Dog'
+        });
+    } else {
+        exports.showPetById.mock(req, res);     // call the mock
+    }
 };
 
 // a custom mock for this implementation
