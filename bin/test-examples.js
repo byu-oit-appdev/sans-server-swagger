@@ -36,14 +36,24 @@ module.exports = testSwaggerResponseExamples;
 function testSwaggerResponseExamples(swaggerFilePath) {
     return testSwaggerResponseExamples.getTests(swaggerFilePath, { flatten: true })
         .then(tests => {
+            let pass = 0;
+            let fail = 0;
             tests.forEach(test => {
                 try {
                     test.test();
+                    pass++;
                     console.log('\u001b[92m\u2713 ' + test.description + '\u001b[39m');
                 } catch (err) {
+                    fail++;
                     console.log('\u001b[91m\u2717 ' + test.description + '\n    ' + err.message + '\u001b[39m');
                 }
             });
+            return {
+                fail: fail,
+                pass: pass,
+                percentage: pass / (pass + fail),
+                total: pass + fail
+            }
         });
 }
 
@@ -99,6 +109,7 @@ testSwaggerResponseExamples.getTests = function(swaggerFilePath, options) {
 
     return swaggerLoad(fullPath)
         .then(swagger => {
+            swagger = swagger.swagger;
             if (!swagger.hasOwnProperty('paths')) return;
 
             // paths
