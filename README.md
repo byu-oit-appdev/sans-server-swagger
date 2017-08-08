@@ -163,10 +163,10 @@ A shortcut method to get a response example.
 
 - *type* - An optional parameter specifying the content-type to use for the example. If omitted then the value will be derived from the request's `Accept` header.
 
-**Returns** the data type that is being enforced.
+**Returns** a value derived from the example.
 
 ```js
-const result = req.enforce(200);
+const result = res.swagger.example(200);
 ```
 
 ### res.swagger.enforce
