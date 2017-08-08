@@ -200,6 +200,19 @@ module.exports = function (configuration) {
                                     // add a build method to the request object
                                     res.enforce = validateResponse.enforce;
 
+                                    // add partial swagger object to req
+                                    req.swagger = copy(methodSchema);
+
+                                    // add swagger object to the response
+                                    res.swagger = {};
+
+                                    // add swagger example getter
+                                    res.swagger.example = function(code, type) {
+                                        server.log('example', 'Getting swagger response example');
+                                        const match = findMatchingExample(swagger, req, code);
+                                        return match.type ? copy(methodSchema.responses[code].examples[type]) : undefined;
+                                    };
+
                                     // if it should be mocked
                                     if (req.query.hasOwnProperty(mockQP) || (!handler && config.development)) {
                                         req.query[mockQP] = req.query[mockQP] || Object.keys(methodSchema.responses)[0] || undefined;
@@ -213,7 +226,6 @@ module.exports = function (configuration) {
                                         // check for a mock property on the operation ID
                                         if (handler && typeof handler.mock === 'function') {
                                             server.log('mock', 'Executing mock from code.');
-                                            req.swagger = copy(methodSchema);
                                             executeController(server, handler.mock, req, res);
 
                                         // schema-less response mocking
@@ -224,26 +236,18 @@ module.exports = function (configuration) {
                                         // check for mock example
                                         } else {
                                             server.log('mock', 'Executing mock from example.');
-                                            const examples = responseSchema && methodSchema.responses[mockCode].examples;
-                                            const accept = req.headers.hasOwnProperty('accept')
-                                                ? req.headers.accept
-                                                : Array.isArray(swagger.produces) && swagger.produces.length > 0
-                                                    ? swagger.produces[0]
-                                                    : examples && Object.keys(examples)[0];
-
-                                            const match = findMatchingExample(examples, accept);
+                                            const match = findMatchingExample(swagger, req, mockCode);
                                             if (match.type) {
-                                                res.send(examples[match.type]);
+                                                res.send(methodSchema.responses[mockCode].examples[match.type]);
                                             } else {
                                                 server.log('mock', 'Example not implemented');
-                                                const status = match.implemented || !examples || Object.keys(examples).length === 0 ? 501 : 406;
+                                                const status = match.code;
                                                 res.send(Exception(status, statusMessage[status]));
                                             }
                                         }
 
                                     // if there is a controller then run it
                                     } else if (handler) {
-                                        req.swagger = copy(swagger);                            // TODO: figure out how to present route specific swagger
                                         executeController(server, handler, req, res);
 
                                     } else {
@@ -304,60 +308,44 @@ function executeController(server, controller, req, res) {
 }
 
 /**
- * Execute the default response handler in either promise or callback paradigm
- * @param {Function} handler
- * @param {Response} res
- * @param {Object} state
- */
-function executeErrorHandler(handler, res, state) {
-    const deferred = {};
-    deferred.promise = new Promise(function(resolve, reject) {
-        deferred.resolve = resolve;
-        deferred.reject = reject;
-    });
-
-    if (handler.length > 1) {
-        try {
-            const callback = function (err) {
-                if (err) return deferred.reject(err);
-                deferred.resolve();
-            };
-            handler.call(res, state, callback);
-        } catch (err) {
-            deferred.reject(err);
-        }
-    } else {
-        try {
-            Promise.resolve(handler.call(res, state))
-                .then(deferred.resolve, deferred.reject);
-        } catch (err) {
-            deferred.reject(err);
-        }
-    }
-}
-
-/**
  * Look through swagger examples and find a match based on the accept content type
- * @param {object} examples
- * @param {string} accept
- * @returns {*}
+ * @param {object} swagger
+ * @param {object} req
+ * @param {string|number} code
+ * @returns {{ code: number, type: string|undefined }}
  */
-function findMatchingExample(examples, accept) {
+function findMatchingExample(swagger, req, code) {
+    const responses = req.swagger.responses;
+
+    // if no responses then exit
+    if (!responses || responses.length === 0) return { code: 501, type: undefined };
+
+    // get first code if not provided
+    if (arguments.length < 1) code = Object.keys(responses)[0];
+
+    // validate that responses exist
+    const responseSchema = responses[code];
+    if (!responseSchema) return { code: 501, type: undefined };
+
+    const examples = responses[code].examples;
+    const accept = req.headers.hasOwnProperty('accept')
+        ? req.headers.accept
+        : Array.isArray(swagger.produces) && swagger.produces.length > 0
+            ? swagger.produces[0]
+            : examples && Object.keys(examples)[0];
+
+    // check if there are examples
     const keys = examples ? Object.keys(examples) : [];
     const typesLength = keys.length;
-    const implemented = typesLength > 0;
+    if (typesLength === 0) return { code: 501, type: undefined };
 
-    // quick result
-    if (!implemented) return { implemented: false, type: undefined };
-    if (accept === '*') return keys[0];
+    // if anything is accepted then return first example
+    if (accept === '*') return { code: code, type: keys[0] };
 
     // determine what types and subtypes are supported by examples
     const types = keys.map(key => {
         const ar = key.split('/');
-        return {
-            type: ar[0] || '*',
-            subtype: ar[1] || '*'
-        }
+        return { type: ar[0] || '*', subtype: ar[1] || '*' };
     });
 
     // find all the types that the client accepts
@@ -377,11 +365,11 @@ function findMatchingExample(examples, accept) {
         for (let j = 0; j < typesLength; j++) {
             const t = types[j];
             if ((t.type === '*' || a.type === '*' || a.type === t.type) &&
-                (t.subtype === '*' || a.subtype === '*' || a.subtype === t.subtype)) return { implemented: true, type: keys[j] };
+                (t.subtype === '*' || a.subtype === '*' || a.subtype === t.subtype)) return { code: code, type: keys[j] };
         }
     }
 
-    return { implemented: implemented, type: undefined };
+    return { code: 406, type: undefined };
 }
 
 /**
