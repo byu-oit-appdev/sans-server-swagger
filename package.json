@@ -23,16 +23,16 @@
   "devDependencies": {
     "chai": "^3.5.0",
     "coveralls": "^2.11.15",
-    "mocha": "^3.2.0",
+    "mocha": "^3.5.0",
     "nyc": "^10.1.2",
     "sans-server": "^1.2.0"
   },
   "dependencies": {
     "fully-typed": "^1.0.0",
-    "js-yaml": "^3.7.0",
+    "js-yaml": "^3.9.1",
     "json-schema-ref-parser": "github:byu-oit/json-schema-ref-parser",
     "sans-server-router": "^1.0.0",
-    "swagger-enforcer": "^1.1.2"
+    "swagger-enforcer": "^1.2.0"
   },
   "repository": {
     "type": "git",
