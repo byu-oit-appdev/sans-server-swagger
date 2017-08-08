@@ -39,6 +39,11 @@ describe('api', () => {
 
     afterEach(() => console.log('\n'));
 
+    it('examples are valid', () => {
+        return Swagger.testSwaggerResponseExamples('./swagger.yaml')
+            .then(results => expect(results.percentage).to.equal(1));
+    });
+
     it('Implementation test for GET /v1/pets?tag=mouse', () => {
         return server.request({ method: 'GET', path: '/v1/pets?tag=mouse' })
             .then(res => {
