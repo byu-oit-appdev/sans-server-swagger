@@ -210,7 +210,7 @@ module.exports = function (configuration) {
                                     res.swagger.example = function(code, type) {
                                         server.log('example', 'Getting swagger response example');
                                         const match = findMatchingExample(swagger, req, code);
-                                        return match.type ? copy(methodSchema.responses[code].examples[type]) : undefined;
+                                        return match.type ? copy(methodSchema.responses[code].examples[match.type]) : undefined;
                                     };
 
                                     // if it should be mocked
@@ -318,10 +318,11 @@ function findMatchingExample(swagger, req, code) {
     const responses = req.swagger.responses;
 
     // if no responses then exit
-    if (!responses || responses.length === 0) return { code: 501, type: undefined };
+    const responseKeys = responses && typeof responses === 'object' ? Object.keys(responses) : [];
+    if (responseKeys.length === 0) return { code: 501, type: undefined };
 
     // get first code if not provided
-    if (arguments.length < 1) code = Object.keys(responses)[0];
+    if (arguments.length < 1) code = responseKeys[0];
 
     // validate that responses exist
     const responseSchema = responses[code];
