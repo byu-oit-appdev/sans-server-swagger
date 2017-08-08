@@ -2,6 +2,27 @@
 
 Sans-Server middleware that uses swagger documents to define routes, validate requests, validate responses, and to produce mocks.
 
+## Table of Contents
+
+- [Example](#example)
+- [Configuration](#configuration)
+- [Helper Methods](#helper-methods)
+    - [req.deserialize.binary](#reqdeserializebinary)
+    - [req.deserialize.byte](#reqdeserializebyte)
+    - [req.deserialize.date](#reqdeserializedate)
+    - [req.deserialize.dateTime](#reqdeserializedatetime)
+    - [res.enforce](#resenforce)
+    - [res.swagger.example](#resswaggerexample)
+    - [res.swagger.enforce](#resswaggerenforce)
+- [Controllers](#controllers)
+- [Mocks](#mocks)
+    - [Validation](#validation)
+    - [Mock Sources](#mock-sources)
+    - [Automatic vs Manual Mocking](#automatic-vs-manual-mocking)
+    - [Test Response Examples](#test-response-examples)
+- [Swagger Enforcer](#swagger-enforcer)
+    - [Response Enforcement](#response-enforcement)
+
 ## Example
 
 The following example will produce mock responses using response examples for any incoming requests. You can add actual implementations through [controllers](#swagger-document-controllers).
@@ -57,6 +78,116 @@ The swagger middleware is generated using a configuration with the following pro
 - *mockQueryParameter* - [OPTIONAL] The query parameter to look for when a response should be manually mocked. Defaults to `mock`.
 
 - *swagger* - [REQUIRED] The swagger file that defines the services. This can be either a json or a yaml file.
+
+## Helper Methods
+
+### req.deserialize.binary
+
+Convert an 8-bit binary string, made of `0`s and `1`s, into a Buffer object.
+
+**Signature:** req.deserialize.binary ( value: String ) : Buffer
+
+**Parameters:**
+
+- *value* - An 8-bit binary string made of `0`s and `1`s.
+
+**Returns** a Buffer.
+
+```js
+const buffer = req.deserialize.binary('00000010');
+```
+
+### req.deserialize.byte
+
+Convert a base64 encoded string into a Buffer object.
+
+**Signature:** req.deserialize.byte ( value: String ) : Buffer
+
+**Parameters:**
+
+- *value* - A base64 encoded string.
+
+**Returns** a Buffer.
+
+```js
+const buffer = req.deserialize.binary('aGVsbG8=');
+```
+
+### req.deserialize.date
+
+Convert a date string (formatted as YYYY-MM-DD) into a Date object.
+
+**Signature:** req.deserialize.date ( value: String ) : Date
+
+**Parameters:**
+
+- *value* - A date string, formatted as YYYY-MM-DD.
+
+**Returns** a Date.
+
+```js
+const date = req.deserialize.date('2000-01-01');
+```
+
+### req.deserialize.dateTime
+
+Convert an ISO date string into a Date object.
+
+**Signature:** req.deserialize.dateTime ( value: String ) : Date
+
+**Parameters:**
+
+- *value* - An ISO date string.
+
+**Returns** a Date.
+
+```js
+const date = req.deserialize.dateTime('2000-01-01T00:00:00.000Z');
+```
+
+### res.enforce
+
+*Deprecated*
+
+[See res.swagger.enforce](#resswaggerenforce)
+
+### res.swagger.example
+
+A shortcut method to get a response example.
+
+**Signature:** res.swagger.example ( [ code: String | Number [, type: String ] ] ) : *
+
+**Parameters:**
+
+- *code* - An optional parameter for the response code. If omitted then the first response code will be used.
+
+- *type* - An optional parameter specifying the content-type to use for the example. If omitted then the value will be derived from the request's `Accept` header.
+
+**Returns** the data type that is being enforced.
+
+```js
+const result = req.enforce(200);
+```
+
+### res.swagger.enforce
+
+Begin building an object with line by line enforcement. As you mutate the object each change will be validated against the expected swagger response. Also implements defaults automatically as possible. If the response is not an object then continual enforcement will not be in effect, although it will validate the initial value.
+
+[Read more about enforcement](#swagger-enforcer)
+
+**Signature:** res.swagger.enforce ( code: String | Number [, initialValue: * ] ) : *
+
+**Parameters:**
+
+- *code* - The response code the enforce the response for.
+
+- *initialValue* - An optional value to initialize with.
+
+**Returns** the data type that is being enforced.
+
+```js
+const result = res.swagger.enforce(200);
+```
 
 ## Controllers
 
@@ -202,48 +333,29 @@ sans-server-swagger ./swagger.yaml
 
 **Validate With Mocha**
 
-You can have validation run with your mocha tests, but you'll need to run the test with the `--delay` flag.
-
 ```js
+const expect = require('chai').expect;
 const Swagger = require('sans-server-swagger');
-Swagger.testSwaggerResponseExamples.withMocha('swagger response examples', './swagger.yaml');
-```
 
-Run tests:
-
-```text
-mocha tests/*.js --delay
+describe('my tests', () => {
+    it('examples are valid', () => {
+        return Swagger.testSwaggerResponseExamples('./swagger.yaml')
+            .then(results => expect(results.percentage).to.equal(1));
+    });
+});
 ```
 
 **Validate With Tape**
 
-You can have validation run with your tape tests:
-
 ```js
 const Swagger = require('sans-server-swagger');
-const tape = require('tape');
+const test = require('tape');
 
-Swagger.testSwaggerResponseExamples.withTape(tape, './swagger.yaml');
-```
-
-**Validate Another Way**
-
-You can get all of the tests and their descriptions as a nested object or as an array (by using the `flatten` option). Once you have all tests you can run them one-by-one and tie them into your own testing tools.
-
-```js
-const Swagger = require('sans-server-swagger');
-
-Swagger.testSwaggerResponseExamples.getTests('./swagger.yaml', { flatten: true })
-    .then(tests => {
-        tests.forEach(test => {
-            try {
-                test.test();
-                console.log('PASSED ' + test.description);
-            } catch (err) {
-                console.log('FAILED ' + test.description + ' because ' + err.message);
-            }
-        })
-    });
+test('my tests', t => {
+    t.plan(1);
+    Swagger.testSwaggerResponseExamples('./swagger.yaml')
+        .then(results => t.equal(results.percentage, 1));
+});
 ```
 
 ## Swagger Enforcer
