@@ -7,13 +7,18 @@ Sans-Server middleware that uses swagger documents to define routes, validate re
 - [Example](#example)
 - [Configuration](#configuration)
 - [Helper Methods](#helper-methods)
-    - [req.deserialize.binary](#reqdeserializebinary)
-    - [req.deserialize.byte](#reqdeserializebyte)
-    - [req.deserialize.date](#reqdeserializedate)
-    - [req.deserialize.dateTime](#reqdeserializedatetime)
+    - req.deserialize
+        - [.binary](#reqdeserializebinary)
+        - [.byte](#reqdeserializebyte)
+        - [.date](#reqdeserializedate)
+        - [.dateTime](#reqdeserializedatetime)
+    - req.swagger    
+        - [.rel](#reqswaggerrel)
+        - [.root](#reqswaggerroot)
     - [res.enforce](#resenforce)
-    - [res.swagger.example](#resswaggerexample)
-    - [res.swagger.enforce](#resswaggerenforce)
+    - res.swagger
+        - [.example](#resswaggerexample)
+        - [.enforce](#resswaggerenforce)
 - [Controllers](#controllers)
 - [Mocks](#mocks)
     - [Validation](#validation)
@@ -143,6 +148,22 @@ Convert an ISO date string into a Date object.
 
 ```js
 const date = req.deserialize.dateTime('2000-01-01T00:00:00.000Z');
+```
+
+### req.swagger.rel
+
+Get an object that represents the swagger schema for the current request path and method.
+
+```js
+const swagger = req.swagger.rel;
+```
+
+### req.swagger.root
+
+Get an object that represents the swagger document from its root.
+
+```js
+const swagger = req.swagger.root;
 ```
 
 ### res.enforce
