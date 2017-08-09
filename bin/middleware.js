@@ -200,17 +200,20 @@ module.exports = function (configuration) {
                                     // add a build method to the request object
                                     res.enforce = validateResponse.enforce;
 
-                                    // add partial swagger object to req
-                                    req.swagger = copy(methodSchema);
+                                    // add swagger object to the request
+                                    const swaggerCopy = copy(swagger);
+                                    req.swagger = {
+                                        root: swaggerCopy,
+                                        rel: swaggerCopy.paths[path][method]
+                                    };
 
                                     // add swagger object to the response
-                                    res.swagger = {};
-
-                                    // add swagger example getter
-                                    res.swagger.example = function(code, type) {
-                                        server.log('example', 'Getting swagger response example');
-                                        const match = findMatchingExample(swagger, req, code);
-                                        return match.type ? copy(methodSchema.responses[code].examples[match.type]) : undefined;
+                                    res.swagger = {
+                                        example: function(code, type) {
+                                            server.log('example', 'Getting swagger response example');
+                                            const match = findMatchingExample(req, code, type);
+                                            return match.type ? copy(methodSchema.responses[code].examples[match.type]) : undefined;
+                                        }
                                     };
 
                                     // if it should be mocked
@@ -236,7 +239,7 @@ module.exports = function (configuration) {
                                         // check for mock example
                                         } else {
                                             server.log('mock', 'Executing mock from example.');
-                                            const match = findMatchingExample(swagger, req, mockCode);
+                                            const match = findMatchingExample(req, mockCode);
                                             if (match.type) {
                                                 res.send(methodSchema.responses[mockCode].examples[match.type]);
                                             } else {
@@ -309,13 +312,14 @@ function executeController(server, controller, req, res) {
 
 /**
  * Look through swagger examples and find a match based on the accept content type
- * @param {object} swagger
  * @param {object} req
- * @param {string|number} code
+ * @param {string|number} [code]
+ * @param {string} [type]
  * @returns {{ code: number, type: string|undefined }}
  */
-function findMatchingExample(swagger, req, code) {
-    const responses = req.swagger.responses;
+function findMatchingExample(req, code, type) {
+    const swagger = req.swagger.root;
+    const responses = req.swagger.rel.responses;
 
     // if no responses then exit
     const responseKeys = responses && typeof responses === 'object' ? Object.keys(responses) : [];
@@ -329,11 +333,13 @@ function findMatchingExample(swagger, req, code) {
     if (!responseSchema) return { code: 501, type: undefined };
 
     const examples = responses[code].examples;
-    const accept = req.headers.hasOwnProperty('accept')
-        ? req.headers.accept
-        : Array.isArray(swagger.produces) && swagger.produces.length > 0
-            ? swagger.produces[0]
-            : examples && Object.keys(examples)[0];
+    const accept = type ?
+        type :
+        req.headers.hasOwnProperty('accept')
+            ? req.headers.accept
+            : Array.isArray(swagger.produces) && swagger.produces.length > 0
+                ? swagger.produces[0]
+                : examples && Object.keys(examples)[0];
 
     // check if there are examples
     const keys = examples ? Object.keys(examples) : [];
