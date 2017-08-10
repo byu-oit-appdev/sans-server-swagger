@@ -198,7 +198,7 @@ module.exports = function (configuration) {
                                     req.deserialize = deserialize;
 
                                     // add a build method to the request object
-                                    res.enforce = validateResponse.enforce;
+                                    res.enforce = validateResponse.enforce;         // TODO: deprecated - remove for 1.x
 
                                     // add swagger object to the request
                                     const swaggerCopy = copy(swagger);
@@ -209,6 +209,7 @@ module.exports = function (configuration) {
 
                                     // add swagger object to the response
                                     res.swagger = {
+                                        enforce: validateResponse.enforce,
                                         example: function(code, type) {
                                             server.log('example', 'Getting swagger response example');
                                             const match = findMatchingExample(req, code, type);
