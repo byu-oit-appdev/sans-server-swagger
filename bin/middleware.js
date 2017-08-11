@@ -116,8 +116,9 @@ module.exports = function (configuration) {
                                     pathController;
 
                                 // set the method to call
-                                const handler = methodSchema.hasOwnProperty('operationId') && controller && typeof controller[methodSchema.operationId] === 'function'
-                                    ? controller[methodSchema.operationId]
+                                const handlerKey = methodSchema.hasOwnProperty('x-operation-id') ? 'x-operation-id' : 'operationId';
+                                const handler = methodSchema.hasOwnProperty(handlerKey) && controller && typeof controller[methodSchema[handlerKey]] === 'function'
+                                    ? controller[methodSchema[handlerKey]]
                                     : null;
 
                                 // validate parameter data
