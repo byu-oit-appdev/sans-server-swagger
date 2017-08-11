@@ -63,7 +63,7 @@ paths:
             "$ref": "#/definitions/Pets"
   "/invalid-response-mocked":
     get:
-      operationId: invalidResponseMocked
+      x-operation-id: invalidResponseMocked
       responses:
         '200':
           description: Response
