@@ -161,10 +161,11 @@ module.exports = function (configuration) {
                                     const server = this;
                                     const statusMessage = server.constructor.Response.status;
 
-                                    res.hook(function(state) {
+                                    res.hook(function sansServerSwagger(state) {
                                         const code = state.statusCode;
 
                                         if (state.body instanceof Exception) {
+                                            server.log('sans-server-swagger', 'Running exception handler');
                                             return exceptionRunner(res, state);
 
                                         } else if (!validateResponse.hasResponseStatus(code)) {
@@ -174,7 +175,9 @@ module.exports = function (configuration) {
                                             return exceptionRunner(res, res.state);
 
                                         } else {
+                                            server.log('sans-server-swagger', 'Validating response');
                                             const errorMessage = validateResponse.validate(code, state.body);
+                                            server.log('sans-server-swagger', 'Response validation completed');
                                             if (errorMessage) {
                                                 server.log('response-error', errorMessage.replace(/\n/g, '\n    '));
                                                 const err = Exception(500, 'Internal Server Error');
