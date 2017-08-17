@@ -132,7 +132,7 @@ module.exports = function (configuration) {
                                         // validate default parameter values
                                         if (p.hasOwnProperty('default')) {
                                             Enforcer(p, swagger.definitions, { enforce: true, useDefaults: true })
-                                                .errors()
+                                                .errors(p.default)
                                                 .forEach(err => pathErrors.push(err.message));
                                         }
                                     });
