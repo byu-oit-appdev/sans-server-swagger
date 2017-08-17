@@ -35,9 +35,7 @@ module.exports = function (server, req, parameters) {
             case 'body':
                 const bodyHasDefault = param.schema && param.schema.hasOwnProperty('default');
                 if (typeof req.body === 'undefined' && bodyHasDefault) {
-                    req.body = typeof param.schema.default === 'object'
-                        ? copy(param.schema.default)
-                        : param.schema.default;
+                    req.body = copy(param.schema.default);
                     server.log('req-params', 'Using default value for parameter ' + name);
                 }
                 req.body = deserializeParameter(server, name, req.body, param.schema);
@@ -46,7 +44,7 @@ module.exports = function (server, req, parameters) {
             case 'formData':
                 if (!req.body && hasDefault) {
                     req.body = {};
-                    req.body[name] = [{ headers: {}, content: param.default }];
+                    req.body[name] = [{ headers: {}, content: copy(param.default) }];
                     server.log('req-params', 'Using default value for parameter ' + name);
                 }
                 if (req.body && typeof req.body === 'object' && req.body.hasOwnProperty(name)) {
@@ -58,7 +56,7 @@ module.exports = function (server, req, parameters) {
                         if (type === 'array' && param.collectionFormat === 'multi') {
                             value = value.map((item, index) => {
                                 const useDefault = !item.content && hasDefault;
-                                const content = useDefault ? param.default : item.content;
+                                const content = useDefault ? copy(param.default) : item.content;
                                 if (useDefault) server.log('req-params', 'Using default value for parameter ' + name + ' at index ' + index);
                                 return {
                                     headers: item.headers,
@@ -69,7 +67,7 @@ module.exports = function (server, req, parameters) {
                         } else {
                             const item = value.pop();
                             const useDefault = !item.content && hasDefault;
-                            const content = useDefault ? param.default : item.content;
+                            const content = useDefault ? copy(param.default) : item.content;
                             if (useDefault) server.log('req-params', 'Using default value for parameter ' + name);
                             value = {
                                 headers: item.headers,
@@ -89,12 +87,12 @@ module.exports = function (server, req, parameters) {
             case 'header':
                 if (!req.headers && hasDefault) {
                     req.headers = {};
-                    req.headers[name] = param.default;
+                    req.headers[name] = copy(param.default);
                     server.log('req-params', 'Using default value for parameter ' + name);
                 }
                 if (req.headers && typeof req.headers === 'object') {
                     if (!req.headers.hasOwnProperty(name) && hasDefault) {
-                        req.headers[name] = param.default;
+                        req.headers[name] = copy(param.default);
                         server.log('req-params', 'Using default value for parameter ' + name);
                     }
                     if (req.headers.hasOwnProperty(name)) req.headers[name] = deserializeParameter(server, name, req.headers[name], param);
@@ -110,12 +108,12 @@ module.exports = function (server, req, parameters) {
             case 'query':
                 if (!req.query && hasDefault) {
                     req.query = {};
-                    req.query[name] = param.default;
+                    req.query[name] = copy(param.default);
                     server.log('req-params', 'Using default value for parameter ' + name);
                 }
                 if (req.query) {
                     if (!req.query.hasOwnProperty(name) && hasDefault) {
-                        req.query[name] = param.default;
+                        req.query[name] = copy(param.default);
                         server.log('req-params', 'Using default value for parameter ' + name);
                     }
                     if (req.query.hasOwnProperty(name)) {
