@@ -256,6 +256,7 @@ module.exports = function (configuration) {
 
                                     // if there is a controller then run it
                                     } else if (handler) {
+                                        server.log('controller', 'Executing controller');
                                         executeController(server, handler, req, res);
 
                                     } else {
@@ -309,7 +310,12 @@ module.exports = function (configuration) {
  */
 function executeController(server, controller, req, res) {
     try {
-        controller.call(server, req, res);
+        const promise = controller.call(server, req, res);
+        if (promise && typeof promise.catch === 'function') {
+            promise.catch(function(err) {
+                res.send(err);
+            });
+        }
     } catch (err) {
         res.send(err);
     }
