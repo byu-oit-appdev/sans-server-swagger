@@ -313,7 +313,7 @@ function executeController(server, controller, req, res) {
         const promise = controller.call(server, req, res);
         if (promise && typeof promise.catch === 'function') {
             promise.catch(function(err) {
-                res.send(err);
+                res.status(500).send(err);
             });
         }
     } catch (err) {
