@@ -45,7 +45,7 @@ function testSwaggerResponseExamples(swaggerFilePath) {
                     console.log('\u001b[92m\u2713 ' + test.description + '\u001b[39m');
                 } catch (err) {
                     fail++;
-                    console.log('\u001b[91m\u2717 ' + test.description + '\n    ' + err.message + '\u001b[39m');
+                    console.log('\u001b[91m\u2717 ' + test.description + '\n    ' + err.message.replace(/\n/g, '\n    ') + '\u001b[39m');
                 }
             });
             return {
@@ -157,8 +157,9 @@ testSwaggerResponseExamples.getTests = function(swaggerFilePath, options) {
                     Object.keys(tests[path][method]).forEach(response => {
                         Object.keys(tests[path][method][response]).forEach(mimeType => {
                             flat.push({
-                                description: method.toUpperCase() + ' ' + path + ' ' + mimeType,
-                                test: tests[path][method][mimeType]
+                                //description: response + ' ' + method.toUpperCase() + ' ' + path + ' ' + mimeType,
+                                description: path + ' ' + method.toUpperCase() + ' ' + response + ' ' + mimeType,
+                                test: tests[path][method][response][mimeType]
                             });
                         });
                     });
