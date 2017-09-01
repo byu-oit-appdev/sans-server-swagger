@@ -131,6 +131,7 @@ testSwaggerResponseExamples.getTests = function(swaggerFilePath, options) {
                                 .forEach(response => {
                                     const responseSchema = methodSchema.responses[response];
                                     if (!responseSchema.hasOwnProperty('examples') || !responseSchema.hasOwnProperty('schema')) return;
+                                    tests[path][method][response] = {};
 
                                     // get enforcer
                                     const enforcer = Enforcer(responseSchema.schema, swagger.definitions || {}, { enforce: true, useDefaults: true });
@@ -138,7 +139,7 @@ testSwaggerResponseExamples.getTests = function(swaggerFilePath, options) {
                                     // examples
                                     Object.keys(responseSchema.examples)
                                         .forEach(mimeType => {
-                                            tests[path][method][mimeType] = function() {
+                                            tests[path][method][response][mimeType] = function() {
                                                 const example = responseSchema.examples[mimeType];
                                                 enforcer.validate(example);
                                             };
@@ -153,10 +154,12 @@ testSwaggerResponseExamples.getTests = function(swaggerFilePath, options) {
             const flat = [];
             Object.keys(tests).forEach(path => {
                 Object.keys(tests[path]).forEach(method => {
-                    Object.keys(tests[path][method]).forEach(mimeType => {
-                        flat.push({
-                            description: method.toUpperCase() + ' ' + path + ' ' + mimeType,
-                            test: tests[path][method][mimeType]
+                    Object.keys(tests[path][method]).forEach(response => {
+                        Object.keys(tests[path][method][response]).forEach(mimeType => {
+                            flat.push({
+                                description: method.toUpperCase() + ' ' + path + ' ' + mimeType,
+                                test: tests[path][method][mimeType]
+                            });
                         });
                     });
                 });
