@@ -33,7 +33,8 @@ module.exports = Typed({
         exception: {
             type: Function,
             default: function(err, req, res, next) {
-                res.sendStatus(err.statusCode);
+                res.reset().status(err.statusCode).body('Need to get better body here');
+                next();
             }
         },
         development: {
