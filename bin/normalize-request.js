@@ -22,11 +22,11 @@ const rxNumber = /^\d+(?:\.\d+)?$/;
 
 /**
  * Normalize and deserialize the request parameters.
- * @param {SansServer} server
+ * @param {Function} log
  * @param {Request} req
  * @param {Object} parameters
  */
-module.exports = function (server, req, parameters) {
+module.exports = function (log, req, parameters) {
     parameters.forEach(param => {
         const name = param.name;
         const hasDefault = param.hasOwnProperty('default');
@@ -36,31 +36,31 @@ module.exports = function (server, req, parameters) {
                 const bodyHasDefault = param.schema && param.schema.hasOwnProperty('default');
                 if (typeof req.body === 'undefined' && bodyHasDefault) {
                     req.body = copy(param.schema.default);
-                    server.log('req-params', 'Using default value for parameter ' + name);
+                    log('req-params: Using default value for parameter ' + name);
                 }
-                req.body = deserializeParameter(server, name, req.body, param.schema);
+                req.body = deserializeParameter(log, name, req.body, param.schema);
                 break;
 
             case 'formData':
                 if (!req.body && hasDefault) {
                     req.body = {};
                     req.body[name] = [{ headers: {}, content: copy(param.default) }];
-                    server.log('req-params', 'Using default value for parameter ' + name);
+                    log('req-params: Using default value for parameter ' + name);
                 }
                 if (req.body && typeof req.body === 'object' && req.body.hasOwnProperty(name)) {
                     if (Array.isArray(req.body[name])) {
                         let value = req.body[name];
                         const type = schemaType(param);
-                        if (!type) server.log('req-params', 'Indeterminate schema type for parameter ' + name, param);
+                        if (!type) log('req-params: Indeterminate schema type for parameter ' + name, param);
 
                         if (type === 'array' && param.collectionFormat === 'multi') {
                             value = value.map((item, index) => {
                                 const useDefault = !item.content && hasDefault;
                                 const content = useDefault ? copy(param.default) : item.content;
-                                if (useDefault) server.log('req-params', 'Using default value for parameter ' + name + ' at index ' + index);
+                                if (useDefault) log('req-params: Using default value for parameter ' + name + ' at index ' + index);
                                 return {
                                     headers: item.headers,
-                                    content: deserializeParameter(server, name, content, param.items)
+                                    content: deserializeParameter(log, name, content, param.items)
                                 };
                             });
 
@@ -68,10 +68,10 @@ module.exports = function (server, req, parameters) {
                             const item = value.pop();
                             const useDefault = !item.content && hasDefault;
                             const content = useDefault ? copy(param.default) : item.content;
-                            if (useDefault) server.log('req-params', 'Using default value for parameter ' + name);
+                            if (useDefault) log('req-params: Using default value for parameter ' + name);
                             value = {
                                 headers: item.headers,
-                                content: deserializeParameter(server, name, content, param)
+                                content: deserializeParameter(log, name, content, param)
                             };
                         }
 
@@ -79,7 +79,7 @@ module.exports = function (server, req, parameters) {
 
                     } else {
                         delete req.body[name];
-                        server.log('req-params', 'Form data parameter ignored due to invalid form data format for parameter ' + name);
+                        log('req-params: Form data parameter ignored due to invalid form data format for parameter ' + name);
                     }
                 }
                 break;
@@ -88,20 +88,20 @@ module.exports = function (server, req, parameters) {
                 if (!req.headers && hasDefault) {
                     req.headers = {};
                     req.headers[name] = copy(param.default);
-                    server.log('req-params', 'Using default value for parameter ' + name);
+                    log('req-params: Using default value for parameter ' + name);
                 }
                 if (req.headers && typeof req.headers === 'object') {
                     if (!req.headers.hasOwnProperty(name) && hasDefault) {
                         req.headers[name] = copy(param.default);
-                        server.log('req-params', 'Using default value for parameter ' + name);
+                        log('req-params: Using default value for parameter ' + name);
                     }
-                    if (req.headers.hasOwnProperty(name)) req.headers[name] = deserializeParameter(server, name, req.headers[name], param);
+                    if (req.headers.hasOwnProperty(name)) req.headers[name] = deserializeParameter(log, name, req.headers[name], param);
                 }
                 break;
 
             case 'path':
                 if (req.params && typeof req.params === 'object' && req.params.hasOwnProperty(name)) {
-                    req.params[name] = deserializeParameter(server, name, req.params[name], param);
+                    req.params[name] = deserializeParameter(log, name, req.params[name], param);
                 }
                 break;
 
@@ -109,26 +109,26 @@ module.exports = function (server, req, parameters) {
                 if (!req.query && hasDefault) {
                     req.query = {};
                     req.query[name] = copy(param.default);
-                    server.log('req-params', 'Using default value for parameter ' + name);
+                    log('req-params: Using default value for parameter ' + name);
                 }
                 if (req.query) {
                     if (!req.query.hasOwnProperty(name) && hasDefault) {
                         req.query[name] = copy(param.default);
-                        server.log('req-params', 'Using default value for parameter ' + name);
+                        log('req-params: Using default value for parameter ' + name);
                     }
                     if (req.query.hasOwnProperty(name)) {
                         const type = schemaType(param);
-                        if (!type) server.log('req-params', 'Indeterminate schema type for parameter ' + name, param);
+                        if (!type) log('req-params: Indeterminate schema type for parameter ' + name, param);
 
                         let value = req.query[name];
 
                         if (type === 'array' && param.collectionFormat === 'multi') {
                             if (!Array.isArray(value)) value = [value];
-                            req.query[name] = value.map(item => deserializeParameter(server, name, item, param.items));
+                            req.query[name] = value.map(item => deserializeParameter(log, name, item, param.items));
 
                         } else {
                             if (Array.isArray(value)) value = value.pop();
-                            req.query[name] = deserializeParameter(server, name, value, param);
+                            req.query[name] = deserializeParameter(log, name, value, param);
                         }
                     }
                 }
@@ -140,17 +140,17 @@ module.exports = function (server, req, parameters) {
 
 /**
  * Deserialize a single parameter.
- * @param {SansServer} server
+ * @param {function} log
  * @param {string} name
  * @param {*} value
  * @param {*} schema
  * @returns {*}
  */
-function deserializeParameter(server, name, value, schema) {
+function deserializeParameter(log, name, value, schema) {
     if (!schema) return value;
 
     const type = schemaType(schema);
-    if (!type) server.log('req-params', 'Indeterminate schema type for parameter ' + name, schema);
+    if (!type) log('req-params: Indeterminate schema type for parameter ' + name, schema);
 
     if (type === 'array') {
         const format = schema.hasOwnProperty('collectionFormat') ? schema.collectionFormat : 'csv';
@@ -161,7 +161,7 @@ function deserializeParameter(server, name, value, schema) {
         value = value.split(delimiter);
         if (!schema.items) return value;
         return value.map(item => {
-            return deserializeParameter(server, 'items for ' + name, item, schema.items);
+            return deserializeParameter(log, 'items for ' + name, item, schema.items);
         });
 
     } else if (type === 'boolean') {

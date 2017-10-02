@@ -22,6 +22,11 @@ const Router            = require('sans-server-router');
 const Swagger           = require('../index');
 const Server            = require('sans-server');
 
+// TODO: remove this
+process.on('unhandledRejection', e => {
+    console.error(e.stack);
+});
+
 describe('middleware', () => {
 
     const helloPath = {
@@ -206,7 +211,7 @@ describe('middleware', () => {
         it('invalid controller', () => {
             const server = makeServer({ development: false, swagger: { 'x-controller': 'foo' } });
             return server.request('/')
-                .then(res => expect(res.statusCode).to.equal(404));
+                .then(res => expect(res.statusCode).to.equal(500));
         });
 
     });

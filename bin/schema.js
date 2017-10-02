@@ -32,7 +32,9 @@ module.exports = Typed({
         },
         exception: {
             type: Function,
-            default: function(res, state) {}
+            default: function(err, req, res, next) {
+                res.sendStatus(err.statusCode);
+            }
         },
         development: {
             type: Boolean,
