@@ -40,7 +40,7 @@ describe('composition', () => {
 
     describe('recursive object', () => {
 
-        it('mock not implemented', () => {
+        it.only('mock not implemented', () => {
             return api.request({ method: 'GET', path: '/v1/recObj' })
                 .then(res => {
                     expect(res.statusCode).to.equal(501);
