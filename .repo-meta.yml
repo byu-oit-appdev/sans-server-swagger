@@ -1,4 +1,4 @@
-$schemaver: '2.0'
+$schemaver: 2.1
 repo_url: https://github.com/byu-oit/sans-server-swagger
 software:
   - name: sans-server-swagger
@@ -43,7 +43,4 @@ software:
             virtual_server:
             rack_server:
             blade_server:
-    tags:
-      data-sensitivity: confidential
-      app: sans-server-swagger
-      team: gro:AD-Miscellaneous Information Applications
+    data_sensitivity: confidential
