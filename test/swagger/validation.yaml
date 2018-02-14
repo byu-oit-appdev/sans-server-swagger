@@ -78,7 +78,19 @@ paths:
           description: Error
           schema:
             $ref: '#/definitions/Error'
-
+  "/invalid-response-code":
+      get:
+        operationId: invalidResponseCode
+        responses:
+          '200':
+            description: Response
+            examples:
+              application/json:
+              - id: 123
+                name: Sparky
+                tag: Dog
+            schema:
+              "$ref": "#/definitions/Pets"
   "/default-response":
     get:
       operationId: defaultResponse
