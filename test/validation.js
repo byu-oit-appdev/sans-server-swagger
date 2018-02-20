@@ -64,11 +64,10 @@ describe('validation', () => {
     });
 
     it('exception', () => {
-        return api.request('/v1/default-response')
+        return api.request('/v1/invalid-response-code')
             .then(res => {
                 expect(res.body).to.equal(JSON.stringify({ code: 500, message: 'Invalid swagger response code: 500' }));
             });
-
     });
 
     describe('valid response', () => {
@@ -87,6 +86,13 @@ describe('validation', () => {
                 .then(res => {
                     expect(res.body).to.equal(validExample);
                 });
+        });
+
+        it('default response', () => {
+          return api.request('/v1/default-response')
+            .then(res => {
+              expect(res.body).to.equal(JSON.stringify({ code: 500, message: 'Oops' }));
+            });
         });
 
     });

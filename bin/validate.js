@@ -133,9 +133,13 @@ exports.response = function(schema, definitions) {
 
     return {
         enforce: function(code, initial) {
-            if (!enforcers.hasOwnProperty(code)) throw Error('Invalid swagger response code: ' + code);
-            if (!enforcers[code]) throw Error('No schema to enforce.');
-            return arguments.length > 1 ? enforcers[code].enforce.enforce(initial) : enforcers[code].enforce.enforce();
+            let response_to_enforce = code;
+            if (!enforcers.hasOwnProperty(code)) {
+                if (!enforcers.hasOwnProperty('default')) throw Error('Invalid swagger response code: ' + code);
+                response_to_enforce = 'default';
+            }
+            if (!enforcers[response_to_enforce]) throw Error('No schema to enforce.');
+            return arguments.length > 1 ? enforcers[response_to_enforce].enforce.enforce(initial) : enforcers[response_to_enforce].enforce.enforce();
         },
 
         hasResponseStatus: function(code) {
@@ -150,6 +154,11 @@ exports.response = function(schema, definitions) {
                     .validate
                     .errors(value);
                 if (errors.length > 0) return 'Response did not meet swagger requirements:\n  ' + errors.join('\n  ');
+            } else if (enforcers['default']) {
+                const errors = enforcers['default']
+                    .validate
+                    .errors(value);
+                if (errors.length > 0) return 'Response did not meet swagger requirements:\n  ' + errors.join('\n  ');
             }
         }
     }
@@ -157,5 +166,6 @@ exports.response = function(schema, definitions) {
 
 function objectHasOneOf(obj, keys, index) {
     if (obj.hasOwnProperty(keys[index])) return true;
+    if (obj.hasOwnProperty('default')) return true;
     return keys.length > index + 1 ? objectHasOneOf(obj, keys, index + 1) : false;
 }
