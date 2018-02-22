@@ -154,7 +154,7 @@ exports.response = function(schema, definitions) {
                     .validate
                     .errors(value);
                 if (errors.length > 0) return 'Response did not meet swagger requirements:\n  ' + errors.join('\n  ');
-            } else if (enforcers['default']) {
+            } else if (!enforcers.hasOwnProperty(code) && enforcers['default']) {
                 const errors = enforcers['default']
                     .validate
                     .errors(value);
