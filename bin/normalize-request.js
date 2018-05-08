@@ -34,11 +34,12 @@ module.exports = function (server, req, parameters) {
         switch (param.in) {
             case 'body':
                 const bodyHasDefault = param.schema && param.schema.hasOwnProperty('default');
-                if (typeof req.body === 'undefined' && bodyHasDefault) {
+                const bodyType = typeof req.body;
+                if (bodyType === 'undefined' && bodyHasDefault) {
                     req.body = copy(param.schema.default);
                     server.log('req-params', 'Using default value for parameter ' + name);
                 }
-                req.body = deserializeParameter(server, name, req.body, param.schema);
+                if (bodyType !== 'object') req.body = deserializeParameter(server, name, req.body, param.schema);
                 break;
 
             case 'formData':
