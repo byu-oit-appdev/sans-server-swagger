@@ -1,6 +1,6 @@
 {
   "name": "sans-server-swagger",
-  "version": "0.3.13",
+  "version": "0.3.14",
   "description": "Sans-Server middleware that uses swagger documents to define routes, validate requests, validate responses, and to produce mocks.",
   "main": "index.js",
   "bin": {
@@ -22,9 +22,9 @@
   "license": "Apache-2.0",
   "devDependencies": {
     "chai": "^3.5.0",
-    "coveralls": "^2.11.15",
-    "mocha": "^3.5.0",
-    "nyc": "^10.1.2",
+    "coveralls": "^3.0.1",
+    "mocha": "^5.1.1",
+    "nyc": "^11.7.1",
     "sans-server": "^1.2.0"
   },
   "dependencies": {
